@@ -1,0 +1,20 @@
+.env
+env.json
+build/
+allure-report/
+oscript_modules/
+node_modules/
+_examples/
+
+# VitePress
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+ConfigDumpInfo.xml
+lastUploadedCommit.txt
+lastUploadedConfigDumpInfo.xml
+build
+out
+.scannerwork
+.sonarlint/
+.idea/

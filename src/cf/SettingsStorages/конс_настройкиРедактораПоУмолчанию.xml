@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.17">
+	<SettingsStorage uuid="c06de57f-8d93-44da-9492-61343d51f2b7">
+		<InternalInfo>
+			<xr:GeneratedType name="SettingsStorageManager.конс_настройкиРедактораПоУмолчанию" category="Manager">
+				<xr:TypeId>cb158962-559b-4a29-b8d7-75e7e05a823f</xr:TypeId>
+				<xr:ValueId>9284d95d-c648-4e50-b1b1-77f28e4e039a</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties>
+			<Name>конс_настройкиРедактораПоУмолчанию</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Конс настройки редактора по умолчанию</v8:content>
+				</v8:item>
+			</Synonym>
+			<Comment/>
+			<DefaultSaveForm>SettingsStorage.конс_настройкиРедактораПоУмолчанию.Form.ФормаСохранения</DefaultSaveForm>
+			<DefaultLoadForm/>
+			<AuxiliarySaveForm/>
+			<AuxiliaryLoadForm/>
+		</Properties>
+		<ChildObjects>
+			<Form>ФормаСохранения</Form>
+		</ChildObjects>
+	</SettingsStorage>
+</MetaDataObject>
