@@ -248,6 +248,7 @@
 			<CommonModule>конс_ПодключаемаяКонсольПовтИсп</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольСервер</CommonModule>
 			<CommonForm>конс_НастройкиПодключаемойКонсолиКода</CommonForm>
+			<Enum>конс_РежимПоказаПеременных</Enum>
 			<DataProcessor>конс_ДемоКонсоль</DataProcessor>
 		</ChildObjects>
 	</Configuration>
