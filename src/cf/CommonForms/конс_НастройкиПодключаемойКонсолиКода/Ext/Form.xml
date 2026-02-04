@@ -17,6 +17,7 @@
 	<ChildItems>
 		<InputField name="Тема" id="21">
 			<DataPath>Тема</DataPath>
+			<Visible>false</Visible>
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
@@ -46,6 +47,7 @@
 		</InputField>
 		<InputField name="ПутьКШаблонамКода" id="27">
 			<DataPath>ПутьКШаблонамКода</DataPath>
+			<Visible>false</Visible>
 			<ToolTip>
 				<v8:item>
 					<v8:lang>ru</v8:lang>

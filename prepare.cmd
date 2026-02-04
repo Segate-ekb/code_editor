@@ -1,6 +1,9 @@
 @chcp 65001
 @setlocal enableextensions
 
+@rem упаковка monaco в Template.bin перед сборкой
+call pack-monaco.cmd || exit /b %errorlevel%
+
 @rem Сборка основной разработческой ИБ. по умолчанию в каталоге build/ib
 call vrunner init-dev --src src/cf %* || exit /b %errorlevel%
 

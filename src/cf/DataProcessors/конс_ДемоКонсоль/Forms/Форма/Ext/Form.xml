@@ -72,7 +72,7 @@
 	<Attributes>
 		<Attribute name="Объект" id="24">
 			<Type>
-				<v8:Type>cfg:DataProcessorObject.Обработка1</v8:Type>
+				<v8:Type>cfg:DataProcessorObject.конс_ДемоКонсоль</v8:Type>
 			</Type>
 			<MainAttribute>true</MainAttribute>
 		</Attribute>

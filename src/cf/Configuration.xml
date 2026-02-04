@@ -247,9 +247,8 @@
 			<CommonModule>конс_ПодключаемаяКонсольКлиент</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольПовтИсп</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольСервер</CommonModule>
-			<SettingsStorage>конс_настройкиРедактораПоУмолчанию</SettingsStorage>
 			<CommonForm>конс_НастройкиПодключаемойКонсолиКода</CommonForm>
-			<DataProcessor>Обработка1</DataProcessor>
+			<DataProcessor>конс_ДемоКонсоль</DataProcessor>
 		</ChildObjects>
 	</Configuration>
 </MetaDataObject>

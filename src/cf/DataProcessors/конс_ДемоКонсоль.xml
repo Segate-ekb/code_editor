@@ -2,21 +2,26 @@
 <MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.17">
 	<DataProcessor uuid="279f9a06-09dd-4337-b0af-4c8f939c4cf3">
 		<InternalInfo>
-			<xr:GeneratedType name="DataProcessorObject.Обработка1" category="Object">
+			<xr:GeneratedType name="DataProcessorObject.конс_ДемоКонсоль" category="Object">
 				<xr:TypeId>421ee58e-6385-4a6d-bea5-c78530acd816</xr:TypeId>
 				<xr:ValueId>c5b59798-34c3-4eb5-bbc8-e2b4a9480e41</xr:ValueId>
 			</xr:GeneratedType>
-			<xr:GeneratedType name="DataProcessorManager.Обработка1" category="Manager">
+			<xr:GeneratedType name="DataProcessorManager.конс_ДемоКонсоль" category="Manager">
 				<xr:TypeId>059a4826-5b7c-449a-be09-820e91dd9399</xr:TypeId>
 				<xr:ValueId>7a4723b6-ff0e-481c-99a8-8cac63f2ff0b</xr:ValueId>
 			</xr:GeneratedType>
 		</InternalInfo>
 		<Properties>
-			<Name>Обработка1</Name>
-			<Synonym/>
+			<Name>конс_ДемоКонсоль</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Демо консоль</v8:content>
+				</v8:item>
+			</Synonym>
 			<Comment/>
 			<UseStandardCommands>true</UseStandardCommands>
-			<DefaultForm>DataProcessor.Обработка1.Form.Форма</DefaultForm>
+			<DefaultForm>DataProcessor.конс_ДемоКонсоль.Form.Форма</DefaultForm>
 			<AuxiliaryForm/>
 			<IncludeHelpInContents>false</IncludeHelpInContents>
 			<ExtendedPresentation/>

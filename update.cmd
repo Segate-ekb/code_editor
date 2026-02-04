@@ -1,6 +1,9 @@
 @chcp 65001
 @setlocal enableextensions
 
+@rem упаковка monaco в Template.bin перед обновлением
+call pack-monaco.cmd || exit /b %errorlevel%
+
 @rem обновление конфигурации основной разработческой ИБ без поддержки или на поддержке. по умолчанию в каталоге build/ib
 call vrunner update-dev --src src/cf --disable-support %* || exit /b %errorlevel%
 
