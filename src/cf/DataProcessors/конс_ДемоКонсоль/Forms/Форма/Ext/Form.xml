@@ -121,13 +121,13 @@
 		<Event name="OnCreateAtServer">ПриСозданииНаСервере</Event>
 	</Events>
 	<ChildItems>
-		<HTMLDocumentField name="HTML" id="23">
+		<HTMLDocumentField name="ПолеРедактора" id="23">
 			<DataPath>конс_HTML</DataPath>
-			<ContextMenu name="HTMLКонтекстноеМеню" id="25"/>
-			<ExtendedTooltip name="HTMLРасширеннаяПодсказка" id="27"/>
+			<ContextMenu name="ПолеРедактораКонтекстноеМеню" id="25"/>
+			<ExtendedTooltip name="ПолеРедактораРасширеннаяПодсказка" id="27"/>
 			<Events>
-				<Event name="DocumentComplete">HTMLДокументСформирован</Event>
-				<Event name="OnClick">HTMLПриНажатии</Event>
+				<Event name="DocumentComplete">ПолеРедактораДокументСформирован</Event>
+				<Event name="OnClick">ПолеРедактораПриНажатии</Event>
 			</Events>
 		</HTMLDocumentField>
 	</ChildItems>
