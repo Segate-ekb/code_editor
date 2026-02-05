@@ -61,6 +61,57 @@
 						<CommandName>Form.Command.ПереключитьНаYAML</CommandName>
 						<ExtendedTooltip name="ПереключитьНаYAMLРасширеннаяПодсказка" id="22"/>
 					</Button>
+					<Button name="ПереключитьНаЗапрос" id="43">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПереключитьНаЗапрос</CommandName>
+						<ExtendedTooltip name="ПереключитьНаЗапросРасширеннаяПодсказка" id="44"/>
+					</Button>
+					<Button name="ПереключитьНаXML" id="45">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПереключитьНаXML</CommandName>
+						<ExtendedTooltip name="ПереключитьНаXMLРасширеннаяПодсказка" id="46"/>
+					</Button>
+					<Button name="ПереключитьНаСКД" id="47">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПереключитьНаСКД</CommandName>
+						<ExtendedTooltip name="ПереключитьНаСКДРасширеннаяПодсказка" id="48"/>
+					</Button>
+				</ChildItems>
+			</Popup>
+			<Popup name="ТестыAPI" id="49">
+				<Title>
+					<v8:item>
+						<v8:lang>ru</v8:lang>
+						<v8:content>Тесты API</v8:content>
+					</v8:item>
+				</Title>
+				<ExtendedTooltip name="ТестыAPIРасширеннаяПодсказка" id="50"/>
+				<ChildItems>
+					<Button name="ПереключитьТолькоЧтение" id="51">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПереключитьТолькоЧтение</CommandName>
+						<ExtendedTooltip name="ПереключитьТолькоЧтениеРасширеннаяПодсказка" id="52"/>
+					</Button>
+					<Button name="ВставитьТестовыйТекст" id="53">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ВставитьТестовыйТекст</CommandName>
+						<ExtendedTooltip name="ВставитьТестовыйТекстРасширеннаяПодсказка" id="54"/>
+					</Button>
+					<Button name="ПолучитьТекстКнопка" id="55">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПолучитьТекст</CommandName>
+						<ExtendedTooltip name="ПолучитьТекстКнопкаРасширеннаяПодсказка" id="56"/>
+					</Button>
+					<Button name="ПолучитьВыделенныйТекстКнопка" id="57">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ПолучитьВыделенныйТекст</CommandName>
+						<ExtendedTooltip name="ПолучитьВыделенныйТекстКнопкаРасширеннаяПодсказка" id="58"/>
+					</Button>
+					<Button name="ОчиститьРедакторКнопка" id="59">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ОчиститьРедактор</CommandName>
+						<ExtendedTooltip name="ОчиститьРедакторКнопкаРасширеннаяПодсказка" id="60"/>
+					</Button>
 				</ChildItems>
 			</Popup>
 		</ChildItems>
@@ -195,6 +246,84 @@
 			</ToolTip>
 			<Shortcut>Shift+F5</Shortcut>
 			<Action>ВнешнееВыполнениеКода</Action>
+		</Command>
+		<Command name="ПереключитьТолькоЧтение" id="32">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Только чтение</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Переключить режим только для чтения</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ПереключитьТолькоЧтение</Action>
+		</Command>
+		<Command name="ВставитьТестовыйТекст" id="36">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Вставить тестовый код</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ВставитьТестовыйТекст</Action>
+		</Command>
+		<Command name="ПолучитьТекст" id="37">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Получить текст</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ПолучитьТекст</Action>
+		</Command>
+		<Command name="ПолучитьВыделенныйТекст" id="38">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Получить выделение</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ПолучитьВыделенныйТекст</Action>
+		</Command>
+		<Command name="ОчиститьРедактор" id="39">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Очистить</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ОчиститьРедактор</Action>
+		</Command>
+		<Command name="ПереключитьНаЗапрос" id="40">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Запрос 1С</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ПереключитьНаЗапрос</Action>
+		</Command>
+		<Command name="ПереключитьНаXML" id="41">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>XML</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ПереключитьНаXML</Action>
+		</Command>
+		<Command name="ПереключитьНаСКД" id="42">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>СКД</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ПереключитьНаСКД</Action>
 		</Command>
 	</Commands>
 </Form>
