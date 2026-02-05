@@ -255,6 +255,7 @@
 			<CommonTemplate>конс_КонсольКода</CommonTemplate>
 			<CommonModule>конс_ПодключаемаяКонсольВызовСервера</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольКлиент</CommonModule>
+			<CommonModule>конс_ПодключаемаяКонсольКлиентСервер</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольПовтИсп</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольСервер</CommonModule>
 			<CommonForm>конс_НастройкиПодключаемойКонсолиКода</CommonForm>
