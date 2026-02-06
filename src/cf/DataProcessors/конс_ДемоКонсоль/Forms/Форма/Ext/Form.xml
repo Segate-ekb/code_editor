@@ -114,6 +114,53 @@
 					</Button>
 				</ChildItems>
 			</Popup>
+			<Popup name="НастройкиПеременных" id="61">
+				<Title>
+					<v8:item>
+						<v8:lang>ru</v8:lang>
+						<v8:content>Переменные</v8:content>
+					</v8:item>
+				</Title>
+				<ExtendedTooltip name="НастройкиПеременныхРасширеннаяПодсказка" id="62"/>
+				<ChildItems>
+					<Popup name="РежимПоказаПеременных" id="63">
+						<Title>
+							<v8:item>
+								<v8:lang>ru</v8:lang>
+								<v8:content>Режим показа</v8:content>
+							</v8:item>
+						</Title>
+						<ExtendedTooltip name="РежимПоказаПеременныхРасширеннаяПодсказка" id="64"/>
+						<ChildItems>
+							<Button name="РежимВТабло" id="65">
+								<Type>CommandBarButton</Type>
+								<CommandName>Form.Command.УстановитьРежимВТабло</CommandName>
+								<ExtendedTooltip name="РежимВТаблоРасширеннаяПодсказка" id="66"/>
+							</Button>
+							<Button name="РежимВПодсказках" id="67">
+								<Type>CommandBarButton</Type>
+								<CommandName>Form.Command.УстановитьРежимВПодсказках</CommandName>
+								<ExtendedTooltip name="РежимВПодсказкахРасширеннаяПодсказка" id="68"/>
+							</Button>
+							<Button name="РежимНеОтображать" id="69">
+								<Type>CommandBarButton</Type>
+								<CommandName>Form.Command.УстановитьРежимНеОтображать</CommandName>
+								<ExtendedTooltip name="РежимНеОтображатьРасширеннаяПодсказка" id="70"/>
+							</Button>
+						</ChildItems>
+					</Popup>
+					<Button name="ВыбратьПеременные" id="71">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ВыбратьПеременные</CommandName>
+						<ExtendedTooltip name="ВыбратьПеременныеРасширеннаяПодсказка" id="72"/>
+					</Button>
+					<Button name="ОчиститьФильтрПеременных" id="73">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ОчиститьФильтрПеременных</CommandName>
+						<ExtendedTooltip name="ОчиститьФильтрПеременныхРасширеннаяПодсказка" id="74"/>
+					</Button>
+				</ChildItems>
+			</Popup>
 		</ChildItems>
 	</AutoCommandBar>
 	<Events>
@@ -143,6 +190,32 @@
 				<v8:item>
 					<v8:lang>ru</v8:lang>
 					<v8:content>HTML</v8:content>
+				</v8:item>
+			</Title>
+			<Type>
+				<v8:Type>xs:string</v8:Type>
+				<v8:StringQualifiers>
+					<v8:Length>0</v8:Length>
+					<v8:AllowedLength>Variable</v8:AllowedLength>
+				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="РежимПоказаПеременных" id="80">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Режим показа переменных</v8:content>
+				</v8:item>
+			</Title>
+			<Type>
+				<v8:Type>cfg:EnumRef.конс_РежимПоказаПеременных</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ФильтрПеременных" id="81">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Фильтр переменных</v8:content>
 				</v8:item>
 			</Title>
 			<Type>
@@ -324,6 +397,81 @@
 				</v8:item>
 			</Title>
 			<Action>ПереключитьНаСКД</Action>
+		</Command>
+		<Command name="УстановитьРежимВТабло" id="75">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>В табло</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Отображать переменные в табло (рядом с кодом)</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>УстановитьРежимВТабло</Action>
+		</Command>
+		<Command name="УстановитьРежимВПодсказках" id="76">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>В подсказках</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Отображать переменные при наведении на них</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>УстановитьРежимВПодсказках</Action>
+		</Command>
+		<Command name="УстановитьРежимНеОтображать" id="77">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Не отображать</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Не собирать и не отображать переменные</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>УстановитьРежимНеОтображать</Action>
+		</Command>
+		<Command name="ВыбратьПеременные" id="78">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Выбрать переменные...</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Выбрать переменные для отображения</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ВыбратьПеременные</Action>
+		</Command>
+		<Command name="ОчиститьФильтрПеременных" id="79">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Показывать все</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Сбросить фильтр и показывать все переменные</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ОчиститьФильтрПеременных</Action>
 		</Command>
 	</Commands>
 </Form>
