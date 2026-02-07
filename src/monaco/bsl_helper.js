@@ -3478,6 +3478,73 @@ class bslHelper {
 	}
 
 	/**
+	 * Finds all functions and procedures defined in the current module
+	 * 
+	 * @returns {array} array with method objects containing name and parameters
+	 */
+	getModuleMethodsNames() {
+
+		let methods = [];
+		const pattern = '(?:процедура|функция|procedure|function)\\s+([a-zA-Z0-9\u0410-\u044F_]+)\\s*\\(([^)]*)\\)';
+		const matches = Finder.findMatches(this.model, pattern);
+
+		for (let idx = 0; idx < matches.length; idx++) {
+
+			let match = matches[idx];
+			let methodName = match.matches[1];
+			let params = match.matches[2] ? match.matches[2].trim() : '';
+
+			if (!methods.some(m => m.name.toLowerCase() === methodName.toLowerCase())) {
+				methods.push({
+					name: methodName,
+					params: params,
+					line: match.range.startLineNumber
+				});
+			}
+
+		}
+
+		return methods;
+
+	}
+
+	/**
+	 * Fills array of completion for module's functions and procedures
+	 * 
+	 * @param {array} suggestions array of suggestions for provideCompletionItems
+	 */
+	getModuleMethodsCompletion(suggestions) {
+
+		if (this.word) {
+
+			let methods = this.getModuleMethodsNames();
+
+			for (let idx = 0; idx < methods.length; idx++) {
+
+				let method = methods[idx];
+
+				if (method.name.toLowerCase().startsWith(this.word)) {
+
+					let insertText = method.name + '($0)';
+					let signature = method.params ? '(' + method.params + ')' : '()';
+
+					suggestions.push({
+						label: method.name + signature,
+						kind: monaco.languages.CompletionItemKind.Function,
+						insertText: insertText,
+						insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+						detail: 'Метод модуля',
+						sortText: '0' + method.name
+					});
+				}
+
+			}
+
+		}
+
+	}
+
+	/**
 	 * Fills completions for object's methods and properties
 	 * into expressions like 'Types = New Array; Types.Cou<-(unt)'
 	 * 
@@ -3677,8 +3744,10 @@ class bslHelper {
 
 								if (!this.getMetadataCompletion(suggestions, bslMetadata)) {
 
-									if (!suggestions.length)
+									if (!suggestions.length) {
 										this.getVariablesCompetition(suggestions);
+										this.getModuleMethodsCompletion(suggestions);
+									}
 
 									if (engLang)
 										this.getCommonCompletion(suggestions, bslGlobals.keywords, monaco.languages.CompletionItemKind.Keyword, true);
@@ -6031,6 +6100,60 @@ class bslHelper {
 	}
 
 	/**
+	 * Fills signatures provided for module's own functions and procedures
+	 * 
+	 * @param {SignatureHelpContext} context signature help context
+	 * 
+	 * @return {SignatureHelp} helper with signatures
+	 */
+	getModuleMethodsSigHelp(context) {
+
+		let helper = null;
+		let funcName = context.methodName.toLowerCase();
+		const pattern = '(?:процедура|функция|procedure|function)\\s+' + funcName + '\\s*\\(([^)]*)\\)';
+		const matches = Finder.findMatches(this.model, pattern);
+
+		if (matches && matches.length) {
+
+			for (let idx = 0; idx < matches.length; idx++) {
+
+				let match = matches[idx];
+				let params_str = match.matches[1] ? match.matches[1].trim() : '';
+				let sig_params = bslHelper.parseFunctionParameters(this.model, params_str, match.range.startLineNumber);
+
+				let signature = {
+					label: '(' + params_str + ')',
+					parameters: []
+				}
+
+				if (params_str) {
+					let params = params_str.split(',');
+					params.forEach(function (param) {
+						let param_name = param.split('=')[0].trim();
+						let param_doc = sig_params[param_name] || '';
+						signature.parameters.push({
+							label: param_name,
+							documentation: param_doc
+						});
+					});
+				}
+
+				helper = {
+					activeParameter: context.activeParameter,
+					activeSignature: 0,
+					signatures: [signature],
+				}
+
+				break;
+
+			}
+
+		}
+
+		return helper;
+	}
+
+	/**
 	 * Return an index of the active parameter
 	 * 
 	 * @param {string} signatureString string with method's params
@@ -6148,6 +6271,9 @@ class bslHelper {
 
 				if (!helper)
 					helper = this.getCommonSigHelp(context, bslGlobals.customFunctions);
+
+				if (!helper)
+					helper = this.getModuleMethodsSigHelp(context);
 
 			}
 

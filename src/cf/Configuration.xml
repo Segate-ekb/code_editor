@@ -253,6 +253,7 @@
 			<Language>Русский</Language>
 			<Subsystem>конс_ПодключаемаяКонсольКода</Subsystem>
 			<CommonTemplate>конс_КонсольКода</CommonTemplate>
+			<CommonModule>конс_Инлайнер</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольВызовСервера</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольКлиент</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольКлиентСервер</CommonModule>
