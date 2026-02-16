@@ -92,4 +92,6 @@
 ## Благодарности
 
 - [bsl_console](https://github.com/salexdv/bsl_console) — JavaScript-редактор BSL-кода на базе Monaco Editor. Автор — [@salexdv](https://github.com/salexdv). Весь JS-слой (подсветка синтаксиса, автодополнение, сниппеты, работа с запросами и СКД) взят из этого проекта.
+- **OneDebugger** — расширение для 1С:Предприятие, реализующее компилятор BSL-кода (лексер + парсер + генератор байткода), стековую виртуальную машину и отладчик с точками останова. Архитектурные идеи и подходы OneDebugger послужили отправной точкой при разработке встроенного интерпретатора BSL-кода в данном проекте.
+- [lezer-bsl](https://github.com/alkoleft/lezer-bsl) — грамматика и парсер BSL на основе [Lezer](https://lezer.codemirror.net/). Автор — [@alkoleft](https://github.com/alkoleft). Используется для построения синтаксического дерева BSL-кода с поддержкой инкрементального парсинга.
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) — редактор кода от Microsoft, лежащий в основе VS Code.
