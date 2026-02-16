@@ -252,14 +252,40 @@
 		<ChildObjects>
 			<Language>Русский</Language>
 			<Subsystem>конс_ПодключаемаяКонсольКода</Subsystem>
+			<CommonPicture>конс_ДлительнаяОперация</CommonPicture>
+			<CommonPicture>конс_ОформлениеЗнакВосклицательныйЗнак</CommonPicture>
+			<CommonPicture>конс_Стоп</CommonPicture>
+			<CommonPicture>конс_ТочкаОстанова</CommonPicture>
+			<CommonTemplate>конс_ВстроенныеФункцииВМ</CommonTemplate>
+			<CommonTemplate>конс_Грамматика</CommonTemplate>
 			<CommonTemplate>конс_КонсольКода</CommonTemplate>
-			<CommonModule>конс_Инлайнер</CommonModule>
+			<CommonTemplate>конс_МетодыГлобальногоКонтекста</CommonTemplate>
+			<CommonTemplate>конс_ОбработчикиОпКодовВМ</CommonTemplate>
+			<CommonTemplate>конс_СловарьТиповEn</CommonTemplate>
+			<CommonTemplate>конс_СловарьТиповRu</CommonTemplate>
+			<CommonTemplate>конс_ТаблицаПереходовЛексера</CommonTemplate>
+			<CommonTemplate>конс_ТаблицаПереходовПарсера</CommonTemplate>
+			<CommonModule>конс_АСТ_ЛексерКлиентСервер</CommonModule>
+			<CommonModule>конс_АСТ_ПарсерКлиентСервер</CommonModule>
+			<CommonModule>конс_АСТ_ПостроительКлиентСервер</CommonModule>
+			<CommonModule>конс_АСТ_ПрепроцессорКлиентСервер</CommonModule>
+			<CommonModule>конс_ВМ_ВызовСервера</CommonModule>
+			<CommonModule>конс_ВМ_КлиентСервер</CommonModule>
+			<CommonModule>конс_ВМ_ОпКодыКлиентСервер</CommonModule>
+			<CommonModule>конс_ВМ_ПопыткиКлиентСервер</CommonModule>
+			<CommonModule>конс_КомпиляцияКлиентСервер</CommonModule>
+			<CommonModule>конс_КомпиляцияСемантикаКлиентСервер</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольВызовСервера</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольКлиент</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольКлиентСервер</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольПовтИсп</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольСервер</CommonModule>
+			<CommonModule>конс_ПросмотрЗначенийКлиентСервер</CommonModule>
+			<CommonModule>конс_СистемаТиповКлиентСервер</CommonModule>
+			<CommonModule>конс_ТаблицыПереходовКлиентСервер</CommonModule>
+			<CommonModule>конс_ТаблицыПереходовПовтИсп</CommonModule>
 			<CommonForm>конс_НастройкиПодключаемойКонсолиКода</CommonForm>
+			<Catalog>ТестовыйСправочник</Catalog>
 			<Enum>конс_РежимПоказаПеременных</Enum>
 			<DataProcessor>конс_ДемоКонсоль</DataProcessor>
 		</ChildObjects>

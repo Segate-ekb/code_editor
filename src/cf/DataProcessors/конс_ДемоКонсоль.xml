@@ -29,6 +29,14 @@
 		</Properties>
 		<ChildObjects>
 			<Form>Форма</Form>
+			<Template>ТестBSL</Template>
+			<Template>ТестBSLОтладчик</Template>
+			<Template>ТестJSON</Template>
+			<Template>ТестYAML</Template>
+			<Template>ТестЗапрос</Template>
+			<Template>ТестXML</Template>
+			<Template>ТестСКД</Template>
+			<Template>ТестСхемы</Template>
 		</ChildObjects>
 	</DataProcessor>
 </MetaDataObject>

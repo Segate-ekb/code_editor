@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+    <product id="1">
+        <name>Товар 1</name>
+        <price currency="RUB">1500.00</price>
+        <quantity>100</quantity>
+    </product>
+    <product id="2">
+        <name>Товар 2</name>
+        <price currency="RUB">2500.00</price>
+        <quantity>50</quantity>
+    </product>
+    <settings>
+        <autoUpdate enabled="true"/>
+        <cacheTTL>3600</cacheTTL>
+    </settings>
+</catalog>

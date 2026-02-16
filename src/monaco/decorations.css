@@ -158,7 +158,7 @@
 }
 
 .diff-header {
-	font-size: 12px;
+	font-size: 13px;
 	padding-left: 5px;
 	border-left: 1px solid;
 	border-right: 1px solid;
@@ -221,3 +221,248 @@
 .code-marker.marker-warning {
 	border-left: 10px solid #eaac0e;
 }
+
+/* #region debugger */
+
+.debug-breakpoint {
+	background: #e51400;
+	border-radius: 50%;
+	width: 10px !important;
+	height: 10px !important;
+	left: 4px !important;
+	top: 4px !important;
+	cursor: pointer;
+}
+
+.debug-breakpoint-disabled {
+	background: #848484;
+	border-radius: 50%;
+	width: 10px !important;
+	height: 10px !important;
+	left: 4px !important;
+	top: 4px !important;
+	cursor: pointer;
+}
+
+.debug-current-line {
+	background-color: rgba(255, 238, 98, 0.35);
+}
+
+.dark .debug-current-line {
+	background-color: rgba(255, 238, 98, 0.15);
+}
+
+.flash-line-yellow {
+	background-color: rgba(255, 230, 0, 0.45);
+	transition: background-color 1.2s ease-out;
+}
+
+.dark .flash-line-yellow {
+	background-color: rgba(255, 230, 0, 0.25);
+}
+
+.flash-line-yellow-fade {
+	background-color: transparent;
+	transition: background-color 1.2s ease-out;
+}
+
+.flash-line-red {
+	background-color: rgba(255, 60, 60, 0.35);
+	transition: background-color 1.2s ease-out;
+}
+
+.dark .flash-line-red {
+	background-color: rgba(255, 60, 60, 0.25);
+}
+
+.flash-line-red-fade {
+	background-color: transparent;
+	transition: background-color 1.2s ease-out;
+}
+
+.debug-current-arrow {
+	width: 0 !important;
+	height: 0 !important;
+	margin-left: 2px;
+	top: 5px !important;
+	border-top: 5px solid transparent;
+	border-left: 10px solid #ffcc00;
+	border-bottom: 5px solid transparent;
+}
+
+.debug-toolbar {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 100;
+	background-color: #f3f3f3;
+	border: 1px solid #ccc;
+	border-top: none;
+	border-radius: 0 0 6px 6px;
+	padding: 2px 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	gap: 2px;
+	align-items: center;
+	transition: border-radius 0.15s;
+}
+
+.debug-toolbar.dragging {
+	transition: none;
+	opacity: 0.85;
+}
+
+.dark .debug-toolbar {
+	background-color: #3c3c3c;
+	border-color: #555;
+}
+
+.debug-toolbar.visible {
+	display: flex;
+}
+
+/* Drag handle */
+.debug-toolbar-drag-handle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: grab;
+	width: 12px;
+	height: 20px;
+	flex-shrink: 0;
+	color: #999;
+	font-size: 11px;
+	user-select: none;
+	letter-spacing: 1px;
+	line-height: 1;
+}
+
+.debug-toolbar-drag-handle:active {
+	cursor: grabbing;
+}
+
+.dark .debug-toolbar-drag-handle {
+	color: #777;
+}
+
+/* Docked top (default look) */
+.debug-toolbar.docked-top {
+	flex-direction: row;
+	border-top: none;
+	border-radius: 0 0 6px 6px;
+}
+
+/* Docked bottom */
+.debug-toolbar.docked-bottom {
+	flex-direction: row;
+	border-bottom: none;
+	border-top: 1px solid #ccc;
+	border-radius: 6px 6px 0 0;
+}
+
+.dark .debug-toolbar.docked-bottom {
+	border-top-color: #555;
+}
+
+/* Docked left */
+.debug-toolbar.docked-left {
+	flex-direction: column;
+	border-left: none;
+	border-top: 1px solid #ccc;
+	border-radius: 0 6px 6px 0;
+}
+
+.dark .debug-toolbar.docked-left {
+	border-top-color: #555;
+}
+
+/* Docked right */
+.debug-toolbar.docked-right {
+	flex-direction: column;
+	border-right: none;
+	border-top: 1px solid #ccc;
+	border-radius: 6px 0 0 6px;
+}
+
+.dark .debug-toolbar.docked-right {
+	border-top-color: #555;
+}
+
+/* Separators rotate when docked to sides */
+.debug-toolbar.docked-left .debug-toolbar-separator,
+.debug-toolbar.docked-right .debug-toolbar-separator {
+	width: 20px;
+	height: 1px;
+	margin: 2px 0;
+}
+
+/* Drag handle rotates when docked to sides */
+.debug-toolbar.docked-left .debug-toolbar-drag-handle,
+.debug-toolbar.docked-right .debug-toolbar-drag-handle {
+	width: 20px;
+	height: 12px;
+}
+
+.debug-toolbar-button {
+	width: 28px;
+	height: 28px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	position: relative;
+}
+
+.debug-toolbar-button:hover {
+	background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark .debug-toolbar-button:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+.debug-toolbar-button:disabled {
+	opacity: 0.35;
+	cursor: default;
+	pointer-events: none;
+}
+
+.debug-toolbar-button.active {
+	background-color: rgba(229, 20, 0, 0.15);
+	border-radius: 4px;
+}
+
+.dark .debug-toolbar-button.active {
+	background-color: rgba(229, 20, 0, 0.25);
+}
+
+.debug-toolbar-button.active:hover {
+	background-color: rgba(229, 20, 0, 0.25);
+}
+
+.dark .debug-toolbar-button.active:hover {
+	background-color: rgba(229, 20, 0, 0.35);
+}
+
+.debug-toolbar-button svg {
+	width: 16px;
+	height: 16px;
+}
+
+.debug-toolbar-separator {
+	width: 1px;
+	height: 20px;
+	background-color: #ccc;
+	margin: 0 2px;
+}
+
+.dark .debug-toolbar-separator {
+	background-color: #555;
+}
+
+/* #endregion */

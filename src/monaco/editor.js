@@ -37,6 +37,21 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
   editor_options = [];
   snippets = {};
   treeview = null;
+  // debugger state
+  debugModeFlag = 0;
+  debugBreakpoints = new Map();
+  debugCurrentLine = null;
+  debugDecorations = [];
+  debugUsingDebugger = false;
+  debugGlyphListenerAttached = false;
+  debugToolbarElement = null;
+  debugStopOnError = false;
+  debugToolbarDockSide = 'top';
+  debugToolbarDockOffset = 0.5;
+  debugPanelCollapsed = false;
+  debugCustomExpressions = [];
+  debugLastVariablesData = null;
+  schemaRegistry = new Map();
   // #endregion
 
   // #region public API
@@ -191,6 +206,114 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
 
   }
 
+  /**
+   * Registers a variable with OpenAPI/JSON-Schema type
+   * for intellisense on Map/Structure operations.
+   * 
+   * @param {string} variableName - variable name in code (case-insensitive)
+   * @param {string|object} schema - OpenAPI spec (JSON string or object) 
+   * @param {string} typeName - schema/component name (e.g. "Pet", "Error")
+   * 
+   * @returns {true|object} true on success, {errorDescription} on failure
+   */
+  setVariableSchema = function (variableName, schema, typeName) {
+
+    try {
+      return bslHelper.setVariableSchema(variableName, schema, typeName);
+    }
+    catch (e) {
+      return { errorDescription: e.message };
+    }
+
+  }
+
+  /**
+   * Removes schema binding for a variable
+   * 
+   * @param {string} variableName - variable name
+   */
+  removeVariableSchema = function (variableName) {
+
+    schemaRegistry.delete(variableName.toLowerCase());
+
+  }
+
+  /**
+   * Removes all schema bindings
+   */
+  clearVariableSchemas = function () {
+
+    schemaRegistry.clear();
+
+  }
+
+  /**
+   * Loads an OpenAPI / Swagger / JSON-Schema file and registers
+   * all found types as variables in the schema registry.
+   *
+   * For OpenAPI 3.x  — iterates components.schemas
+   * For Swagger 2.x  — iterates definitions
+   * For plain JSON Schema — uses schema.title or "Schema"
+   *
+   * Additionally registers the variables with updateMetadata
+   * so they appear in basic autocomplete.
+   *
+   * @param {string|object} schema - JSON string or parsed object
+   * @returns {string} comma-separated list of registered type names
+   */
+  loadSchemaFile = function (schema) {
+
+    try {
+
+      let schemaObj = (typeof schema === 'string') ? JSON.parse(schema) : schema;
+      let registeredTypes = [];
+
+      // OpenAPI 3.x
+      if (schemaObj.openapi && schemaObj.components && schemaObj.components.schemas) {
+        let schemas = schemaObj.components.schemas;
+        for (let typeName in schemas) {
+          if (schemas.hasOwnProperty(typeName)) {
+            let result = bslHelper.setVariableSchema(typeName, schemaObj, typeName);
+            if (result === true) registeredTypes.push(typeName);
+          }
+        }
+      }
+      // Swagger 2.x
+      else if (schemaObj.swagger && schemaObj.definitions) {
+        let defs = schemaObj.definitions;
+        for (let typeName in defs) {
+          if (defs.hasOwnProperty(typeName)) {
+            let result = bslHelper.setVariableSchema(typeName, schemaObj, typeName);
+            if (result === true) registeredTypes.push(typeName);
+          }
+        }
+      }
+      // Plain JSON Schema
+      else if (schemaObj.type || schemaObj.properties || schemaObj.$ref) {
+        let name = schemaObj.title || 'Schema';
+        let result = bslHelper.setVariableSchema(name, schemaObj, name);
+        if (result === true) registeredTypes.push(name);
+      }
+
+      // Register as autocomplete variables via updateMetadata
+      if (registeredTypes.length) {
+        let customObjects = {};
+        for (let i = 0; i < registeredTypes.length; i++) {
+          customObjects[registeredTypes[i]] = { properties: {} };
+        }
+        let bsl = new bslHelper(editor.getModel(), editor.getPosition());
+        bsl.updateMetadata(JSON.stringify({ customObjects: customObjects }));
+      }
+
+      return registeredTypes.join(',');
+
+    }
+    catch (e) {
+      return '';
+    }
+
+  }
+
   setTheme = function (theme) {
         
     monaco.editor.setTheme(theme);
@@ -342,6 +465,560 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
     initContextMenuActions();
 
   }
+
+  // #region debugger public API
+
+  setUsingDebugger = function (enabled) {
+
+    debugUsingDebugger = enabled;
+
+    if (enabled) {
+      editor.updateOptions({ glyphMargin: true });
+      createDebugToolbar();
+    } else {
+      editor.updateOptions({ glyphMargin: false });
+      removeDebugToolbar();
+    }
+
+    initContextMenuActions();
+
+  }
+
+  updateBreakpoints = function (line) {
+
+    if (line != undefined) {
+      if (debugBreakpoints.has(line)) {
+        debugBreakpoints.delete(line);
+      } else {
+        debugBreakpoints.set(line, { enabled: true });
+      }
+    }
+
+    refreshDebugDecorations();
+    sendEvent('EVENT_UPDATE_BREAKPOINTS', getBreakpoints());
+
+  }
+
+  getBreakpoints = function () {
+
+    return JSON.stringify([...debugBreakpoints.keys()].sort((a, b) => a - b));
+
+  }
+
+  removeAllBreakpoints = function () {
+
+    debugBreakpoints.clear();
+    refreshDebugDecorations();
+    sendEvent('EVENT_REMOVE_ALL_BREAKPOINTS', '[]');
+
+  }
+
+  setCurrentDebugLine = function (line) {
+
+    debugCurrentLine = line;
+    refreshDebugDecorations();
+
+  }
+
+  deleteCurrentDebugLine = function () {
+
+    debugCurrentLine = null;
+    refreshDebugDecorations();
+
+  }
+
+  setDebugMode = function (mode) {
+
+    debugModeFlag = mode;
+    updateDebugToolbarVisibility();
+    updateCommandBarVisibility();
+    if (mode) {
+      editor.updateOptions({ readOnly: true });
+    } else {
+      editor.updateOptions({ readOnly: readOnlyMode });
+      deleteCurrentDebugLine();
+      // Don't hide panel — keep messages/errors visible after execution
+    }
+
+  }
+
+  isDebugMode = function () {
+
+    return debugModeFlag;
+
+  }
+
+  startDebugging = function () {
+
+    // Export lezer tokens for the 1C compiler to bypass its own lexer.
+    // bslAstService already has the parsed tree (updated on every edit).
+    let tokensJSON = '';
+    if (typeof bslAstService !== 'undefined' && bslAstService.getTree()) {
+      try {
+        let tokens = bslAstService.exportTokens();
+        if (tokens && tokens.length > 0) {
+          tokensJSON = JSON.stringify(tokens);
+        }
+      } catch (e) {
+        console.warn('Failed to export lezer tokens:', e);
+      }
+    }
+
+    sendEvent('EVENT_START_DEBUGGING', tokensJSON);
+
+  }
+
+  continueDebugging = function () {
+
+    sendEvent('EVENT_CONTINUE_DEBUGGING', '');
+
+  }
+
+  stepOver = function () {
+
+    sendEvent('EVENT_STEP_OVER', '');
+
+  }
+
+  stepInto = function () {
+
+    sendEvent('EVENT_STEP_INTO', '');
+
+  }
+
+  stopDebugging = function () {
+
+    sendEvent('EVENT_STOP_DEBUGGING', '');
+
+  }
+
+  evaluateExpression = function () {
+
+    let expression = getSelectedText() || '';
+    sendEvent('EVENT_EVALUATE_EXPRESSION', expression);
+
+  }
+
+  // #region Debug dialog public API (called from 1C)
+
+  /**
+   * Opens the expression viewer dialog.
+   * Called from 1C instead of opening the конс_Просмотрщик form.
+   * @param {string} [expression] — expression to evaluate
+   */
+  showExpressionDialog = function (expression) {
+    getExpressionDialog().open(expression, editor);
+  }
+
+  /**
+   * Updates the expression dialog tree with evaluation result from 1C.
+   * Called from 1C after evaluating the expression on the server.
+   * @param {string} resultJSON — variable tree JSON (same format as showVariablesDescription)
+   * @param {string} [errorText] — error message if evaluation failed
+   */
+  updateExpressionResult = function (resultJSON, errorText) {
+    getExpressionDialog().updateResult(resultJSON, errorText);
+  }
+
+  /**
+   * Updates a subtree node in the expression dialog after lazy-load expand.
+   * @param {string} variableId — id of the summary element
+   * @param {string} variableJSON — children data JSON
+   */
+  updateDialogSubtree = function (variableId, variableJSON) {
+    getExpressionDialog().updateSubtree(variableId, variableJSON);
+  }
+
+  /**
+   * Opens a read-only string value viewer dialog.
+   * Called from 1C instead of opening the конс_ПросмотрЗначенияВыражения form.
+   * @param {string} value — the string to display
+   * @param {string} [title] — optional dialog title
+   */
+  showStringDialog = function (value, title) {
+    getStringDialog().open(value, title);
+  }
+
+  /**
+   * Opens the collection viewer dialog with initial data.
+   * Called from 1C instead of opening the конс_ПросмотрСодержимогоКоллекции form.
+   * @param {string} paramsJSON — JSON: {type, variableName, totalItems, address, columns, rows, pageSize}
+   */
+  showCollectionDialog = function (paramsJSON) {
+    try {
+      let params = typeof paramsJSON === 'string' ? JSON.parse(paramsJSON) : paramsJSON;
+      getCollectionDialog().open(params);
+    } catch (e) {
+      console.error('showCollectionDialog error:', e);
+    }
+  }
+
+  /**
+   * Updates the collection dialog with a new page of data.
+   * Called from 1C in response to EVENT_DIALOG_GET_COLLECTION_PAGE.
+   * @param {string} dataJSON — JSON: {columns, rows, totalItems}
+   */
+  updateCollectionPage = function (dataJSON) {
+    getCollectionDialog().updatePage(dataJSON);
+  }
+
+  // #endregion
+
+  toggleStopOnError = function () {
+
+    debugStopOnError = !debugStopOnError;
+    updateStopOnErrorButton();
+    sendEvent('EVENT_TOGGLE_STOP_ON_ERROR', debugStopOnError ? '1' : '0');
+
+  }
+
+  getStopOnError = function () {
+
+    return debugStopOnError;
+
+  }
+
+  function updateStopOnErrorButton() {
+
+    let btn = document.getElementById('debug-btn-stoponerror');
+    if (!btn) return;
+    if (debugStopOnError) {
+      btn.classList.add('active');
+      btn.title = 'Остановка по ошибке (вкл.)';
+    } else {
+      btn.classList.remove('active');
+      btn.title = 'Остановка по ошибке (выкл.)';
+    }
+
+  }
+
+  function refreshDebugDecorations() {
+
+    let decor = [];
+
+    debugBreakpoints.forEach(function (value, line) {
+      let glyphClass = value.enabled ? 'debug-breakpoint' : 'debug-breakpoint-disabled';
+      decor.push({
+        range: new monaco.Range(line, 1, line, 1),
+        options: {
+          isWholeLine: false,
+          glyphMarginClassName: glyphClass,
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      });
+    });
+
+    if (debugCurrentLine) {
+      decor.push({
+        range: new monaco.Range(debugCurrentLine, 1, debugCurrentLine, 1),
+        options: {
+          isWholeLine: true,
+          className: 'debug-current-line',
+          glyphMarginClassName: 'debug-current-arrow',
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      });
+    }
+
+    debugDecorations = editor.deltaDecorations(debugDecorations, decor);
+
+  }
+
+  var flashDecorations = [];
+
+  function flashEditorLine(line, cssClass, duration) {
+    // Remove any previous flash
+    if (flashDecorations.length) {
+      flashDecorations = editor.deltaDecorations(flashDecorations, []);
+    }
+    flashDecorations = editor.deltaDecorations([], [{
+      range: new monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: true,
+        className: cssClass,
+        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+      }
+    }]);
+    setTimeout(function() {
+      flashDecorations = editor.deltaDecorations(flashDecorations, []);
+    }, duration || 1500);
+  }
+
+  function createDebugToolbar() {
+
+    if (debugToolbarElement) return;
+
+    debugToolbarElement = document.createElement('div');
+    debugToolbarElement.className = 'debug-toolbar';
+    debugToolbarElement.innerHTML = `
+      <div class="debug-toolbar-drag-handle" title="Перетащите для перемещения">⠇</div>
+      <button class="debug-toolbar-button" id="debug-btn-start" title="Начать отладку (F5)">
+        <svg viewBox="0 0 16 16"><polygon points="3,1 13,8 3,15" fill="#388a34"/></svg>
+      </button>
+      <button class="debug-toolbar-button" id="debug-btn-continue" title="Продолжить (F5)" disabled>
+        <svg viewBox="0 0 16 16">
+          <rect x="2" y="2" width="3" height="12" fill="#388a34"/>
+          <polygon points="7,2 15,8 7,14" fill="#388a34"/>
+        </svg>
+      </button>
+      <button class="debug-toolbar-button" id="debug-btn-stepover" title="Шагнуть через (F10)" disabled>
+        <svg viewBox="0 0 16 16">
+          <circle cx="12" cy="12" r="2" fill="#388a34"/>
+          <path d="M2,8 Q2,3 7,3 L7,1 L11,4 L7,7 L7,5 Q4,5 4,8" stroke="#388a34" stroke-width="1.5" fill="none"/>
+        </svg>
+      </button>
+      <button class="debug-toolbar-button" id="debug-btn-stepinto" title="Шагнуть в (F11)" disabled>
+        <svg viewBox="0 0 16 16">
+          <circle cx="8" cy="13" r="2" fill="#388a34"/>
+          <polyline points="8,2 8,9" stroke="#388a34" stroke-width="2" fill="none"/>
+          <polyline points="5,6 8,9 11,6" stroke="#388a34" stroke-width="2" fill="none"/>
+        </svg>
+      </button>
+      <div class="debug-toolbar-separator"></div>
+      <button class="debug-toolbar-button" id="debug-btn-stop" title="Остановить (Shift+F5)" disabled>
+        <svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" fill="#e51400"/></svg>
+      </button>
+      <button class="debug-toolbar-button" id="debug-btn-evaluate" title="Вычислить выражение (Shift+F9)" disabled>
+        <svg viewBox="0 0 16 16">
+          <rect x="1" y="3" width="14" height="10" rx="1" fill="none" stroke="#388a34" stroke-width="1.3"/>
+          <text x="8" y="10.5" text-anchor="middle" font-size="7" font-weight="bold" fill="#388a34" font-family="monospace">=?</text>
+        </svg>
+      </button>
+      <div class="debug-toolbar-separator"></div>
+      <button class="debug-toolbar-button" id="debug-btn-stoponerror" title="Остановка по ошибке">
+        <svg viewBox="0 0 16 16">
+          <circle cx="8" cy="5" r="4" fill="none" stroke="#e51400" stroke-width="1.5"/>
+          <line x1="8" y1="3" x2="8" y2="5.5" stroke="#e51400" stroke-width="1.5"/>
+          <circle cx="8" cy="7" r="0.6" fill="#e51400"/>
+          <path d="M3,10 L8,15 L13,10" stroke="#e51400" stroke-width="1.5" fill="none"/>
+        </svg>
+      </button>
+    `;
+
+    document.body.appendChild(debugToolbarElement);
+    debugToolbarElement.classList.add('visible');
+
+    // Apply saved dock position
+    snapDebugToolbar(debugToolbarDockSide, debugToolbarDockOffset);
+
+    // Setup drag
+    setupDebugToolbarDrag(debugToolbarElement);
+
+    window.addEventListener('resize', onDebugToolbarWindowResize);
+
+    document.getElementById('debug-btn-start').addEventListener('click', function () {
+      if (!this.disabled) startDebugging();
+    });
+    document.getElementById('debug-btn-continue').addEventListener('click', function () {
+      if (!this.disabled) continueDebugging();
+    });
+    document.getElementById('debug-btn-stepover').addEventListener('click', function () {
+      if (!this.disabled) stepOver();
+    });
+    document.getElementById('debug-btn-stepinto').addEventListener('click', function () {
+      if (!this.disabled) stepInto();
+    });
+    document.getElementById('debug-btn-stop').addEventListener('click', function () {
+      if (!this.disabled) stopDebugging();
+    });
+    document.getElementById('debug-btn-evaluate').addEventListener('click', function () {
+      if (!this.disabled) evaluateExpression();
+    });
+    document.getElementById('debug-btn-stoponerror').addEventListener('click', function () {
+      toggleStopOnError();
+    });
+
+  }
+
+  function removeDebugToolbar() {
+
+    if (debugToolbarElement) {
+      debugToolbarElement.remove();
+      debugToolbarElement = null;
+    }
+    window.removeEventListener('resize', onDebugToolbarWindowResize);
+
+  }
+
+  // --- Debug toolbar drag & snap logic ---
+
+  function getDebugToolbarBounds() {
+    let displayEl = document.getElementById('display');
+    let displayVisible = displayEl && displayEl.style.display !== 'none' && parseFloat(displayEl.style.height) > 0;
+    let bottomLimit = displayVisible ? displayEl.getBoundingClientRect().top : window.innerHeight;
+    return { top: 0, left: 0, right: window.innerWidth, bottom: bottomLimit };
+  }
+
+  function setDebugToolbarDockClass(toolbar, side) {
+    toolbar.classList.remove('docked-top', 'docked-bottom', 'docked-left', 'docked-right');
+    toolbar.classList.add('docked-' + side);
+  }
+
+  function snapDebugToolbar(side, offset) {
+    if (!debugToolbarElement) return;
+    let tb = debugToolbarElement;
+    let bounds = getDebugToolbarBounds();
+
+    tb.style.transform = 'none';
+    setDebugToolbarDockClass(tb, side);
+
+    // Force reflow so flex-direction change applies before measurement
+    void tb.offsetWidth;
+    let tbRect = tb.getBoundingClientRect();
+    let tbW = tbRect.width;
+    let tbH = tbRect.height;
+
+    let areaW = bounds.right - bounds.left;
+    let areaH = bounds.bottom - bounds.top;
+
+    if (side === 'top' || side === 'bottom') {
+      let maxLeft = areaW - tbW;
+      let leftPos = offset * areaW - tbW / 2;
+      leftPos = Math.max(0, Math.min(leftPos, maxLeft));
+      tb.style.left = leftPos + 'px';
+      if (side === 'top') {
+        tb.style.top = '0px';
+      } else {
+        tb.style.top = (bounds.bottom - tbH) + 'px';
+      }
+    } else {
+      let maxTop = areaH - tbH;
+      let topPos = offset * areaH - tbH / 2;
+      topPos = Math.max(0, Math.min(topPos, maxTop));
+      tb.style.top = (bounds.top + topPos) + 'px';
+      if (side === 'left') {
+        tb.style.left = '0px';
+      } else {
+        tb.style.left = (bounds.right - tbW) + 'px';
+      }
+    }
+
+    debugToolbarDockSide = side;
+    debugToolbarDockOffset = offset;
+  }
+
+  function setupDebugToolbarDrag(toolbar) {
+    let handle = toolbar.querySelector('.debug-toolbar-drag-handle');
+    if (!handle) return;
+
+    let startX, startY, origLeft, origTop;
+
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      let rect = toolbar.getBoundingClientRect();
+      origLeft = rect.left;
+      origTop = rect.top;
+      toolbar.classList.add('dragging');
+      toolbar.classList.remove('docked-top', 'docked-bottom', 'docked-left', 'docked-right');
+      toolbar.style.flexDirection = 'row';
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', onDragEnd);
+    });
+
+    function onDrag(e) {
+      let dx = e.clientX - startX;
+      let dy = e.clientY - startY;
+      let bounds = getDebugToolbarBounds();
+      let tbRect = toolbar.getBoundingClientRect();
+
+      let newLeft = origLeft + dx;
+      let newTop = origTop + dy;
+
+      newLeft = Math.max(bounds.left, Math.min(newLeft, bounds.right - tbRect.width));
+      newTop = Math.max(bounds.top, Math.min(newTop, bounds.bottom - tbRect.height));
+
+      toolbar.style.left = newLeft + 'px';
+      toolbar.style.top = newTop + 'px';
+      toolbar.style.transform = 'none';
+    }
+
+    function onDragEnd() {
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', onDragEnd);
+      toolbar.classList.remove('dragging');
+      toolbar.style.flexDirection = '';
+
+      let bounds = getDebugToolbarBounds();
+      let tbRect = toolbar.getBoundingClientRect();
+      let cx = tbRect.left + tbRect.width / 2;
+      let cy = tbRect.top + tbRect.height / 2;
+
+      let distTop = tbRect.top - bounds.top;
+      let distBottom = bounds.bottom - tbRect.bottom;
+      let distLeft = tbRect.left - bounds.left;
+      let distRight = bounds.right - tbRect.right;
+
+      let minDist = Math.min(distTop, distBottom, distLeft, distRight);
+      let side, offset;
+
+      let areaW = bounds.right - bounds.left;
+      let areaH = bounds.bottom - bounds.top;
+
+      if (minDist === distTop) {
+        side = 'top';
+        offset = areaW > 0 ? cx / areaW : 0.5;
+      } else if (minDist === distBottom) {
+        side = 'bottom';
+        offset = areaW > 0 ? cx / areaW : 0.5;
+      } else if (minDist === distLeft) {
+        side = 'left';
+        offset = areaH > 0 ? (cy - bounds.top) / areaH : 0.5;
+      } else {
+        side = 'right';
+        offset = areaH > 0 ? (cy - bounds.top) / areaH : 0.5;
+      }
+
+      offset = Math.max(0, Math.min(1, offset));
+      snapDebugToolbar(side, offset);
+    }
+  }
+
+  function onDebugToolbarWindowResize() {
+    if (debugToolbarElement) {
+      snapDebugToolbar(debugToolbarDockSide, debugToolbarDockOffset);
+    }
+  }
+
+  function resnapDebugToolbar() {
+    if (debugToolbarElement) {
+      requestAnimationFrame(function() {
+        snapDebugToolbar(debugToolbarDockSide, debugToolbarDockOffset);
+      });
+    }
+  }
+
+  function updateDebugToolbarVisibility() {
+
+    if (!debugToolbarElement) return;
+
+    let btnStart = document.getElementById('debug-btn-start');
+    let btnContinue = document.getElementById('debug-btn-continue');
+    let btnStepOver = document.getElementById('debug-btn-stepover');
+    let btnStepInto = document.getElementById('debug-btn-stepinto');
+    let btnStop = document.getElementById('debug-btn-stop');
+    let btnEvaluate = document.getElementById('debug-btn-evaluate');
+
+    if (debugModeFlag) {
+      btnStart.disabled = true;
+      btnContinue.disabled = false;
+      btnStepOver.disabled = false;
+      btnStepInto.disabled = false;
+      btnStop.disabled = false;
+      btnEvaluate.disabled = false;
+    } else {
+      btnStart.disabled = false;
+      btnContinue.disabled = true;
+      btnStepOver.disabled = true;
+      btnStepInto.disabled = true;
+      btnStop.disabled = true;
+      btnEvaluate.disabled = true;
+    }
+
+  }
+
+  // #endregion
 
   getCurrentLanguageId = function() {
 
@@ -1281,6 +1958,11 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
 
   parseSnippets = function(stData, unionSnippets = false) {
 
+    // Удаляем BOM если есть
+    if (stData.charCodeAt(0) === 0xFEFF) {
+      stData = stData.substring(1);
+    }
+
     let parser = new SnippetsParser();
     parser.setStream(stData);
     parser.parse();
@@ -1634,6 +2316,10 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
       registerCodeLensProviders();
       setDefaultSnippets();
       registerExtraLanguages();
+
+      // Attach AST service for structural code analysis
+      if (typeof bslAstService !== 'undefined')
+        bslAstService.attachEditor(editor);
     
       contextMenuEnabled = editor.getRawOptions().contextmenu;
       editor.originalText = '';
@@ -1756,6 +2442,11 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
       if (e.event.detail == 2 && element.classList.contains('line-numbers')) {
         let line = e.target.position.lineNumber;
         updateBookmarks(line);
+      }
+
+      if (debugUsingDebugger && e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+        let line = e.target.position.lineNumber;
+        updateBreakpoints(line);
       }
 
       if (element.classList.contains('diff-navi')) {
@@ -2904,7 +3595,7 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
           this.domNode.style.minWidth = '125px';
           this.domNode.style.textAlign = 'center';
           this.domNode.style.zIndex = 1;
-          this.domNode.style.fontSize = '12px';
+          this.domNode.style.fontSize = '13px';
 
           let pos = document.createElement('div');
           pos.style.margin = 'auto 10px';
@@ -3152,25 +3843,270 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
 
   function showVariablesDisplay() {
 
-    document.getElementById("container").style.height = "70%";
-    getActiveEditor().layout();
-    document.getElementById("display-title").innerHTML = engLang ? "Variables" : "Просмотр значений переменных:"
-    let element = document.getElementById("display");
-    element.style.height = "30%";
-    element.style.display = "block";
+    showDisplayPanel();
+    switchDisplayTab('variables');
 
   }
 
   function hideVariablesDisplay() {
+    
+    hideDisplayPanel();
+
+  }
+
+  function showDisplayPanel() {
+
+    document.getElementById("container").style.height = "70%";
+    getActiveEditor().layout();
+    updateDisplayTabLabels();
+    let element = document.getElementById("display");
+    element.style.height = "30%";
+    element.style.display = "block";
+    // Reset collapsed state when showing panel
+    debugPanelCollapsed = false;
+    let collapseBtn = document.getElementById('display-collapse');
+    if (collapseBtn) collapseBtn.classList.remove('collapsed');
+    resnapDebugToolbar();
+
+  }
+
+  function hideDisplayPanel() {
     
     document.getElementById("container").style.height = "100%";
     getActiveEditor().layout();
     let element = document.getElementById("display");
     element.style.height = "0";
     element.style.display = "none";
-    treeview.dispose();
-    treeview = null;
+    if (treeview) {
+      treeview.dispose();
+      treeview = null;
+    }
+    clearDebugLists();
+    resnapDebugToolbar();
 
+  }
+
+  function updateDisplayTabLabels() {
+
+    let tabs = document.querySelectorAll('#display-tabs .display-tab');
+    let labels = engLang
+      ? { variables: 'Variables', messages: 'Messages', errors: 'Errors', callstack: 'Call Stack' }
+      : { variables: 'Переменные', messages: 'Сообщения', errors: 'Ошибки', callstack: 'Стек вызовов' };
+
+    tabs.forEach(function(tab) {
+      let key = tab.getAttribute('data-tab');
+      let labelEl = tab.querySelector('.tab-label');
+      if (labelEl && labels[key]) {
+        labelEl.textContent = labels[key];
+      }
+    });
+
+  }
+
+  function switchDisplayTab(tabName) {
+
+    document.querySelectorAll('#display-tabs .display-tab').forEach(function(tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
+    });
+    document.querySelectorAll('#display .display-content').forEach(function(content) {
+      content.classList.toggle('active', content.id === tabName + '-display');
+    });
+
+  }
+
+  function updateTabBadge(tabName, count) {
+
+    let badge = document.getElementById('badge-' + tabName);
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.classList.add('visible');
+    } else {
+      badge.textContent = '';
+      badge.classList.remove('visible');
+    }
+
+  }
+
+  function clearDebugLists() {
+
+    document.getElementById('messages-list').innerHTML = '';
+    document.getElementById('errors-list').innerHTML = '';
+    document.getElementById('callstack-list').innerHTML = '';
+    updateTabBadge('variables', 0);
+    updateTabBadge('messages', 0);
+    updateTabBadge('errors', 0);
+    updateTabBadge('callstack', 0);
+
+  }
+
+  showDebugPanel = function(dataJSON) {
+
+    try {
+
+      let data = typeof dataJSON === 'string' ? JSON.parse(dataJSON) : dataJSON;
+
+      // Variables
+      if (data.variables) {
+        let variables = typeof data.variables === 'string' ? JSON.parse(data.variables) : data.variables;
+        debugLastVariablesData = variables;
+        rebuildVariablesTreeWithExpressions(variables);
+      }
+
+      // Messages
+      let msgList = document.getElementById('messages-list');
+      msgList.innerHTML = '';
+      if (data.messages && data.messages.length > 0) {
+        data.messages.forEach(function(msg) {
+          let item = document.createElement('div');
+          item.className = 'debug-list-item';
+          item.textContent = String(msg);
+          msgList.appendChild(item);
+        });
+        updateTabBadge('messages', data.messages.length);
+      } else {
+        msgList.innerHTML = '<div class="debug-list-empty">' + (engLang ? 'No messages' : 'Нет сообщений') + '</div>';
+        updateTabBadge('messages', 0);
+      }
+
+      // Errors
+      let errList = document.getElementById('errors-list');
+      errList.innerHTML = '';
+      if (data.errors && data.errors.length > 0) {
+        data.errors.forEach(function(err) {
+          let item = document.createElement('div');
+          item.className = 'debug-list-item error-item';
+          if (typeof err === 'object' && err !== null) {
+            let errText = err.text || err['Название'] || '';
+            let errLine = err.line || err['Строка'] || 0;
+            if (errText) {
+              item.textContent = errText;
+            } else {
+              item.textContent = JSON.stringify(err);
+            }
+            if (errLine) {
+              item.dataset.line = errLine;
+              item.style.cursor = 'pointer';
+              let lineSpan = document.createElement('span');
+              lineSpan.className = 'error-line';
+              lineSpan.textContent = (engLang ? ' (line ' : ' (строка ') + errLine + ')';
+              item.appendChild(lineSpan);
+            }
+          } else {
+            item.textContent = String(err);
+          }
+          errList.appendChild(item);
+        });
+        updateTabBadge('errors', data.errors.length);
+      } else {
+        errList.innerHTML = '<div class="debug-list-empty">' + (engLang ? 'No errors' : 'Нет ошибок') + '</div>';
+        updateTabBadge('errors', 0);
+      }
+
+      // Call Stack
+      let stackList = document.getElementById('callstack-list');
+      stackList.innerHTML = '';
+      if (data.callStack && data.callStack.length > 0) {
+        data.callStack.forEach(function(frame, index) {
+          let item = document.createElement('div');
+          item.className = 'debug-list-item callstack-item';
+          if (typeof frame === 'object' && frame !== null) {
+            let frameName = frame.name || frame['Название'] || '';
+            let frameLine = frame.line || frame['Строка'] || 0;
+            if (frameName) {
+              let nameSpan = document.createElement('span');
+              nameSpan.className = 'callstack-name';
+              nameSpan.textContent = frameName;
+              item.appendChild(nameSpan);
+            } else {
+              item.textContent = JSON.stringify(frame);
+            }
+            if (frameLine) {
+              item.dataset.line = frameLine;
+              let lineSpan = document.createElement('span');
+              lineSpan.className = 'callstack-line';
+              lineSpan.textContent = (engLang ? 'line ' : 'строка ') + frameLine;
+              item.appendChild(lineSpan);
+            }
+          } else {
+            item.textContent = String(frame);
+          }
+          item.dataset.index = index;
+          stackList.appendChild(item);
+        });
+        updateTabBadge('callstack', data.callStack.length);
+      } else {
+        stackList.innerHTML = '<div class="debug-list-empty">' + (engLang ? 'No call stack' : 'Стек пуст') + '</div>';
+        updateTabBadge('callstack', 0);
+      }
+
+      // Auto-select tab: errors if present, otherwise variables
+      if (data.errors && data.errors.length > 0) {
+        switchDisplayTab('errors');
+      } else if (!document.querySelector('#display-tabs .display-tab.active')) {
+        switchDisplayTab('variables');
+      }
+
+      showDisplayPanel();
+
+      return true;
+
+    }
+    catch (e) {
+      return { errorDescription: e.message };
+    }
+
+  }
+
+  hideDebugPanel = function() {
+
+    hideDisplayPanel();
+
+  }
+
+  function rebuildVariablesTree(variables) {
+    if (treeview != null) {
+      treeview.dispose();
+      treeview = null;
+    }
+    let varCount = Object.keys(variables).length;
+    treeview = new Treeview("#variables-tree", editor, "./tree/icons/");
+    treeview.replaceData(variables);
+    updateTabBadge('variables', varCount);
+  }
+
+  function rebuildVariablesTreeWithExpressions(variables) {
+    // Merge VM variables with custom watch expressions
+    let merged = {};
+    // Copy all VM variables first
+    Object.keys(variables).forEach(function(key) {
+      merged[key] = variables[key];
+    });
+    // Append custom expressions (skip if already present by label)
+    let counter = 0;
+    debugCustomExpressions.forEach(function(expr) {
+      let alreadyPresent = false;
+      Object.keys(variables).forEach(function(key) {
+        if (variables[key] && variables[key].label === expr) {
+          alreadyPresent = true;
+        }
+      });
+      if (!alreadyPresent) {
+        merged['_watch_' + counter] = {
+          label: expr,
+          value: engLang ? 'Undefined' : 'Неопределено',
+          type: '',
+          path: '',
+          class: 'final'
+        };
+        counter++;
+      }
+    });
+    rebuildVariablesTree(merged);
+  }
+
+  function updateCommandBarVisibility() {
+    // Command bar removed — function kept as no-op for compatibility
   }
 
   function setThemeVariablesDisplay(theme) {
@@ -3239,10 +4175,186 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
     
   }, true);
 
-  document.getElementById("display-close").addEventListener("click", (event) => {    
-    
-    hideVariablesDisplay();
+  // display-close removed — collapse button handles panel toggling
 
+  document.getElementById("display-tabs").addEventListener("click", (event) => {
+
+    let tab = event.target.closest('.display-tab');
+    if (tab) {
+      switchDisplayTab(tab.getAttribute('data-tab'));
+    }
+
+  });
+
+  document.getElementById("callstack-list").addEventListener("click", (event) => {
+
+    let item = event.target.closest('.callstack-item');
+    if (item && item.dataset.line) {
+      let line = parseInt(item.dataset.line, 10);
+      if (line > 0) {
+        editor.revealLineInCenter(line);
+        editor.setPosition(new monaco.Position(line, 1));
+        flashEditorLine(line, 'flash-line-yellow', 1500);
+      }
+      // Highlight clicked item briefly
+      document.querySelectorAll('.callstack-item').forEach(function(el) {
+        el.classList.remove('callstack-highlight');
+      });
+      item.classList.add('callstack-highlight');
+      setTimeout(function() { item.classList.remove('callstack-highlight'); }, 1500);
+    }
+
+  });
+
+  document.getElementById("errors-list").addEventListener("click", (event) => {
+
+    let item = event.target.closest('.error-item');
+    if (item && item.dataset.line) {
+      let line = parseInt(item.dataset.line, 10);
+      if (line > 0) {
+        editor.revealLineInCenter(line);
+        editor.setPosition(new monaco.Position(line, 1));
+        flashEditorLine(line, 'flash-line-red', 1500);
+      }
+    }
+
+  });
+
+  // Resize handle: drag to resize display panel
+  (function() {
+    var resizeHandle = document.getElementById('display-resize-handle');
+    var isDragging = false;
+    var startY = 0;
+    var startContainerHeight = 0;
+    var startDisplayHeight = 0;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+      var display = document.getElementById('display');
+      if (display.style.display === 'none') return;
+      if (debugPanelCollapsed) return;
+      e.preventDefault();
+      isDragging = true;
+      startY = e.clientY;
+      var totalHeight = document.body.clientHeight;
+      var container = document.getElementById('container');
+      startContainerHeight = container.offsetHeight;
+      startDisplayHeight = display.offsetHeight;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      var delta = startY - e.clientY;
+      var totalHeight = document.body.clientHeight;
+      var newDisplayHeight = startDisplayHeight + delta;
+      var minDisplay = 28;
+      var minContainer = 80;
+      if (newDisplayHeight < minDisplay) newDisplayHeight = minDisplay;
+      if (totalHeight - newDisplayHeight < minContainer) newDisplayHeight = totalHeight - minContainer;
+      var displayPct = (newDisplayHeight / totalHeight * 100).toFixed(2) + '%';
+      var containerPct = ((totalHeight - newDisplayHeight) / totalHeight * 100).toFixed(2) + '%';
+      document.getElementById('container').style.height = containerPct;
+      document.getElementById('display').style.height = displayPct;
+      getActiveEditor().layout();
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      resnapDebugToolbar();
+    });
+  })();
+
+  // Collapse/expand button
+  document.getElementById('display-collapse').addEventListener('click', function() {
+    let display = document.getElementById('display');
+    let container = document.getElementById('container');
+    let btn = this;
+    if (debugPanelCollapsed) {
+      // Expand
+      container.style.height = '70%';
+      display.style.height = '30%';
+      btn.classList.remove('collapsed');
+      btn.title = engLang ? 'Collapse' : 'Свернуть';
+      debugPanelCollapsed = false;
+    } else {
+      // Collapse to header only
+      container.style.height = 'calc(100% - 28px)';
+      display.style.height = '28px';
+      btn.classList.add('collapsed');
+      btn.title = engLang ? 'Expand' : 'Развернуть';
+      debugPanelCollapsed = true;
+    }
+    getActiveEditor().layout();
+    resnapDebugToolbar();
+  });
+
+  // Show display panel collapsed by default
+  (function() {
+    let display = document.getElementById('display');
+    let container = document.getElementById('container');
+    let collapseBtn = document.getElementById('display-collapse');
+    display.style.display = 'block';
+    display.style.height = '28px';
+    container.style.height = 'calc(100% - 28px)';
+    collapseBtn.classList.add('collapsed');
+    collapseBtn.title = engLang ? 'Expand' : 'Развернуть';
+    debugPanelCollapsed = true;
+    updateDisplayTabLabels();
+    getActiveEditor().layout();
+  })();
+
+  // Variables context menu
+  var ctxMenu = document.getElementById('variables-context-menu');
+  var ctxTarget = null;
+
+  document.getElementById('variables-tree').addEventListener('contextmenu', function(e) {
+    let summary = e.target.closest('summary');
+    if (!summary) return;
+    e.preventDefault();
+    ctxTarget = summary;
+    ctxMenu.style.left = e.clientX + 'px';
+    ctxMenu.style.top = e.clientY + 'px';
+    ctxMenu.style.display = 'block';
+    // Apply dark theme
+    if (document.getElementById('display').classList.contains('dark')) {
+      ctxMenu.classList.add('dark');
+    } else {
+      ctxMenu.classList.remove('dark');
+    }
+  });
+
+  document.addEventListener('click', function() {
+    ctxMenu.style.display = 'none';
+  });
+
+  ctxMenu.addEventListener('click', function(e) {
+    let item = e.target.closest('.ctx-menu-item');
+    if (!item || !ctxTarget) return;
+    let action = item.dataset.action;
+    if (action === 'evaluate') {
+      let label = ctxTarget.dataset.label || ctxTarget.textContent.trim().split(' ')[0];
+      if (label) {
+        sendEvent('EVENT_EVALUATE_EXPRESSION', label);
+      }
+    } else if (action === 'delete') {
+      let label = ctxTarget.dataset.label || '';
+      if (label) {
+        let idx = debugCustomExpressions.indexOf(label);
+        if (idx !== -1) debugCustomExpressions.splice(idx, 1);
+      }
+      let details = ctxTarget.closest('details');
+      if (details) {
+        details.remove();
+        let remaining = document.querySelectorAll('#variables-tree > details').length;
+        updateTabBadge('variables', remaining);
+      }
+    }
+    ctxMenu.style.display = 'none';
+    ctxTarget = null;
   });
   // #endregion
 

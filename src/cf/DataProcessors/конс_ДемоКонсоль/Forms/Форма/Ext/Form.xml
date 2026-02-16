@@ -2,30 +2,6 @@
 <Form xmlns="http://v8.1c.ru/8.3/xcf/logform" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:dcscor="http://v8.1c.ru/8.1/data-composition-system/core" xmlns:dcssch="http://v8.1c.ru/8.1/data-composition-system/schema" xmlns:dcsset="http://v8.1c.ru/8.1/data-composition-system/settings" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.17">
 	<AutoCommandBar name="ФормаКоманднаяПанель" id="-1">
 		<ChildItems>
-			<Button name="ВыполнитьКод" id="10">
-				<Type>CommandBarButton</Type>
-				<Representation>PictureAndText</Representation>
-				<DefaultButton>true</DefaultButton>
-				<CommandName>Form.Command.ВыполнитьКод</CommandName>
-				<Title>
-					<v8:item>
-						<v8:lang>ru</v8:lang>
-						<v8:content>Выполнить (F5)</v8:content>
-					</v8:item>
-				</Title>
-				<ExtendedTooltip name="ВыполнитьКодРасширеннаяПодсказка" id="11"/>
-			</Button>
-			<Button name="ВнешнееВыполнениеКода" id="30">
-				<Type>CommandBarButton</Type>
-				<CommandName>Form.Command.ВнешнееВыполнениеКода</CommandName>
-				<Title>
-					<v8:item>
-						<v8:lang>ru</v8:lang>
-						<v8:content>Внешнее (Shift+F5)</v8:content>
-					</v8:item>
-				</Title>
-				<ExtendedTooltip name="ВнешнееВыполнениеКодаРасширеннаяПодсказка" id="31"/>
-			</Button>
 			<Button name="ОткрытьНастройки" id="12">
 				<Type>CommandBarButton</Type>
 				<CommandName>Form.Command.ОткрытьНастройки</CommandName>
@@ -78,86 +54,112 @@
 					</Button>
 				</ChildItems>
 			</Popup>
-			<Popup name="ТестыAPI" id="49">
+			<Popup name="ТестовыеДанные" id="49">
+				<Title>
+					<v8:item>
+						<v8:lang>ru</v8:lang>
+						<v8:content>Тестовые данные</v8:content>
+					</v8:item>
+				</Title>
+				<ExtendedTooltip name="ТестовыеДанныеРасширеннаяПодсказка" id="50"/>
+				<ChildItems>
+					<Button name="ТестBSL" id="51">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестBSL</CommandName>
+						<ExtendedTooltip name="ТестBSLРасширеннаяПодсказка" id="52"/>
+					</Button>
+					<Button name="ТестBSLОтладчик" id="53">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестBSLОтладчик</CommandName>
+						<ExtendedTooltip name="ТестBSLОтладчикРасширеннаяПодсказка" id="54"/>
+					</Button>
+					<Button name="ТестJSON" id="80">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестJSON</CommandName>
+						<ExtendedTooltip name="ТестJSONРасширеннаяПодсказка" id="81"/>
+					</Button>
+					<Button name="ТестYAML" id="82">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестYAML</CommandName>
+						<ExtendedTooltip name="ТестYAMLРасширеннаяПодсказка" id="83"/>
+					</Button>
+					<Button name="ТестЗапрос" id="84">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестЗапрос</CommandName>
+						<ExtendedTooltip name="ТестЗапросРасширеннаяПодсказка" id="85"/>
+					</Button>
+					<Button name="ТестXML" id="86">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестXML</CommandName>
+						<ExtendedTooltip name="ТестXMLРасширеннаяПодсказка" id="87"/>
+					</Button>
+					<Button name="ТестСКД" id="88">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестСКД</CommandName>
+						<ExtendedTooltip name="ТестСКДРасширеннаяПодсказка" id="89"/>
+					</Button>
+					<Button name="ТестСхемы" id="103">
+						<Type>CommandBarButton</Type>
+						<CommandName>Form.Command.ТестСхемы</CommandName>
+						<ExtendedTooltip name="ТестСхемыРасширеннаяПодсказка" id="104"/>
+					</Button>
+				</ChildItems>
+			</Popup>
+			<Button name="ПереключитьТолькоЧтение" id="55">
+				<Type>CommandBarButton</Type>
+				<Check>true</Check>
+				<CommandName>Form.Command.ПереключитьТолькоЧтение</CommandName>
+				<ExtendedTooltip name="ПереключитьТолькоЧтениеРасширеннаяПодсказка" id="56"/>
+			</Button>
+			<Button name="ОчиститьРедакторКнопка" id="57">
+				<Type>CommandBarButton</Type>
+				<CommandName>Form.Command.ОчиститьРедактор</CommandName>
+				<ExtendedTooltip name="ОчиститьРедакторКнопкаРасширеннаяПодсказка" id="58"/>
+			</Button>
+			<Button name="ЗамерПроизводительности" id="59">
+				<Type>CommandBarButton</Type>
+				<CommandName>Form.Command.ЗамерПроизводительности</CommandName>
+				<ExtendedTooltip name="ЗамерПроизводительностиРасширеннаяПодсказка" id="60"/>
+			</Button>
+			<Popup name="ТестыAPI" id="61">
 				<Title>
 					<v8:item>
 						<v8:lang>ru</v8:lang>
 						<v8:content>Тесты API</v8:content>
 					</v8:item>
 				</Title>
-				<ExtendedTooltip name="ТестыAPIРасширеннаяПодсказка" id="50"/>
+				<ExtendedTooltip name="ТестыAPIРасширеннаяПодсказка" id="62"/>
 				<ChildItems>
-					<Button name="ПереключитьТолькоЧтение" id="51">
-						<Type>CommandBarButton</Type>
-						<CommandName>Form.Command.ПереключитьТолькоЧтение</CommandName>
-						<ExtendedTooltip name="ПереключитьТолькоЧтениеРасширеннаяПодсказка" id="52"/>
-					</Button>
-					<Button name="ВставитьТестовыйТекст" id="53">
-						<Type>CommandBarButton</Type>
-						<CommandName>Form.Command.ВставитьТестовыйТекст</CommandName>
-						<ExtendedTooltip name="ВставитьТестовыйТекстРасширеннаяПодсказка" id="54"/>
-					</Button>
-					<Button name="ПолучитьТекстКнопка" id="55">
+					<Button name="ПолучитьТекстКнопка" id="65">
 						<Type>CommandBarButton</Type>
 						<CommandName>Form.Command.ПолучитьТекст</CommandName>
-						<ExtendedTooltip name="ПолучитьТекстКнопкаРасширеннаяПодсказка" id="56"/>
+						<ExtendedTooltip name="ПолучитьТекстКнопкаРасширеннаяПодсказка" id="66"/>
 					</Button>
-					<Button name="ПолучитьВыделенныйТекстКнопка" id="57">
+					<Button name="ПолучитьВыделенныйТекстКнопка" id="67">
 						<Type>CommandBarButton</Type>
 						<CommandName>Form.Command.ПолучитьВыделенныйТекст</CommandName>
-						<ExtendedTooltip name="ПолучитьВыделенныйТекстКнопкаРасширеннаяПодсказка" id="58"/>
-					</Button>
-					<Button name="ОчиститьРедакторКнопка" id="59">
-						<Type>CommandBarButton</Type>
-						<CommandName>Form.Command.ОчиститьРедактор</CommandName>
-						<ExtendedTooltip name="ОчиститьРедакторКнопкаРасширеннаяПодсказка" id="60"/>
+						<ExtendedTooltip name="ПолучитьВыделенныйТекстКнопкаРасширеннаяПодсказка" id="68"/>
 					</Button>
 				</ChildItems>
 			</Popup>
-			<Popup name="НастройкиПеременных" id="61">
+			<Popup name="Схема" id="95">
 				<Title>
 					<v8:item>
 						<v8:lang>ru</v8:lang>
-						<v8:content>Переменные</v8:content>
+						<v8:content>Схема</v8:content>
 					</v8:item>
 				</Title>
-				<ExtendedTooltip name="НастройкиПеременныхРасширеннаяПодсказка" id="62"/>
+				<ExtendedTooltip name="СхемаРасширеннаяПодсказка" id="96"/>
 				<ChildItems>
-					<Popup name="РежимПоказаПеременных" id="63">
-						<Title>
-							<v8:item>
-								<v8:lang>ru</v8:lang>
-								<v8:content>Режим показа</v8:content>
-							</v8:item>
-						</Title>
-						<ExtendedTooltip name="РежимПоказаПеременныхРасширеннаяПодсказка" id="64"/>
-						<ChildItems>
-							<Button name="РежимВТабло" id="65">
-								<Type>CommandBarButton</Type>
-								<CommandName>Form.Command.УстановитьРежимВТабло</CommandName>
-								<ExtendedTooltip name="РежимВТаблоРасширеннаяПодсказка" id="66"/>
-							</Button>
-							<Button name="РежимВПодсказках" id="67">
-								<Type>CommandBarButton</Type>
-								<CommandName>Form.Command.УстановитьРежимВПодсказках</CommandName>
-								<ExtendedTooltip name="РежимВПодсказкахРасширеннаяПодсказка" id="68"/>
-							</Button>
-							<Button name="РежимНеОтображать" id="69">
-								<Type>CommandBarButton</Type>
-								<CommandName>Form.Command.УстановитьРежимНеОтображать</CommandName>
-								<ExtendedTooltip name="РежимНеОтображатьРасширеннаяПодсказка" id="70"/>
-							</Button>
-						</ChildItems>
-					</Popup>
-					<Button name="ВыбратьПеременные" id="71">
+					<Button name="ЗагрузитьСхемуКнопка" id="97">
 						<Type>CommandBarButton</Type>
-						<CommandName>Form.Command.ВыбратьПеременные</CommandName>
-						<ExtendedTooltip name="ВыбратьПеременныеРасширеннаяПодсказка" id="72"/>
+						<CommandName>Form.Command.ЗагрузитьСхему</CommandName>
+						<ExtendedTooltip name="ЗагрузитьСхемуКнопкаРасширеннаяПодсказка" id="98"/>
 					</Button>
-					<Button name="ОчиститьФильтрПеременных" id="73">
+					<Button name="ОчиститьСхемыКнопка" id="99">
 						<Type>CommandBarButton</Type>
-						<CommandName>Form.Command.ОчиститьФильтрПеременных</CommandName>
-						<ExtendedTooltip name="ОчиститьФильтрПеременныхРасширеннаяПодсказка" id="74"/>
+						<CommandName>Form.Command.ОчиститьСхемы</CommandName>
+						<ExtendedTooltip name="ОчиститьСхемыКнопкаРасширеннаяПодсказка" id="100"/>
 					</Button>
 				</ChildItems>
 			</Popup>
@@ -200,50 +202,8 @@
 				</v8:StringQualifiers>
 			</Type>
 		</Attribute>
-		<Attribute name="РежимПоказаПеременных" id="80">
-			<Title>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Режим показа переменных</v8:content>
-				</v8:item>
-			</Title>
-			<Type>
-				<v8:Type>cfg:EnumRef.конс_РежимПоказаПеременных</v8:Type>
-			</Type>
-		</Attribute>
-		<Attribute name="ФильтрПеременных" id="81">
-			<Title>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Фильтр переменных</v8:content>
-				</v8:item>
-			</Title>
-			<Type>
-				<v8:Type>xs:string</v8:Type>
-				<v8:StringQualifiers>
-					<v8:Length>0</v8:Length>
-					<v8:AllowedLength>Variable</v8:AllowedLength>
-				</v8:StringQualifiers>
-			</Type>
-		</Attribute>
 	</Attributes>
 	<Commands>
-		<Command name="ВыполнитьКод" id="1">
-			<Title>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Выполнить код</v8:content>
-				</v8:item>
-			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Выполнить код на сервере (F5)</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Shortcut>F5</Shortcut>
-			<Action>ВыполнитьКод</Action>
-		</Command>
 		<Command name="ОткрытьНастройки" id="2">
 			<Title>
 				<v8:item>
@@ -304,22 +264,6 @@
 			</ToolTip>
 			<Action>ПереключитьНаYAML</Action>
 		</Command>
-		<Command name="ВнешнееВыполнениеКода" id="6">
-			<Title>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Внешнее выполнение</v8:content>
-				</v8:item>
-			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Пример внешнего выполнения кода (Shift+F5)</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Shortcut>Shift+F5</Shortcut>
-			<Action>ВнешнееВыполнениеКода</Action>
-		</Command>
 		<Command name="ПереключитьТолькоЧтение" id="32">
 			<Title>
 				<v8:item>
@@ -334,15 +278,6 @@
 				</v8:item>
 			</ToolTip>
 			<Action>ПереключитьТолькоЧтение</Action>
-		</Command>
-		<Command name="ВставитьТестовыйТекст" id="36">
-			<Title>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Вставить тестовый код</v8:content>
-				</v8:item>
-			</Title>
-			<Action>ВставитьТестовыйТекст</Action>
 		</Command>
 		<Command name="ПолучитьТекст" id="37">
 			<Title>
@@ -398,80 +333,128 @@
 			</Title>
 			<Action>ПереключитьНаСКД</Action>
 		</Command>
-		<Command name="УстановитьРежимВТабло" id="75">
+		<Command name="ТестBSL" id="75">
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>В табло</v8:content>
+					<v8:content>BSL (базовый)</v8:content>
 				</v8:item>
 			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Отображать переменные в табло (рядом с кодом)</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Action>УстановитьРежимВТабло</Action>
+			<Action>ТестBSL</Action>
 		</Command>
-		<Command name="УстановитьРежимВПодсказках" id="76">
+		<Command name="ТестBSLОтладчик" id="76">
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>В подсказках</v8:content>
+					<v8:content>BSL (отладчик)</v8:content>
 				</v8:item>
 			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Отображать переменные при наведении на них</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Action>УстановитьРежимВПодсказках</Action>
+			<Action>ТестBSLОтладчик</Action>
 		</Command>
-		<Command name="УстановитьРежимНеОтображать" id="77">
+		<Command name="ТестJSON" id="90">
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Не отображать</v8:content>
+					<v8:content>JSON</v8:content>
 				</v8:item>
 			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Не собирать и не отображать переменные</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Action>УстановитьРежимНеОтображать</Action>
+			<Action>ТестJSON</Action>
 		</Command>
-		<Command name="ВыбратьПеременные" id="78">
+		<Command name="ТестYAML" id="91">
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Выбрать переменные...</v8:content>
+					<v8:content>YAML</v8:content>
 				</v8:item>
 			</Title>
-			<ToolTip>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Выбрать переменные для отображения</v8:content>
-				</v8:item>
-			</ToolTip>
-			<Action>ВыбратьПеременные</Action>
+			<Action>ТестYAML</Action>
 		</Command>
-		<Command name="ОчиститьФильтрПеременных" id="79">
+		<Command name="ТестЗапрос" id="92">
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Показывать все</v8:content>
+					<v8:content>Запрос 1С</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ТестЗапрос</Action>
+		</Command>
+		<Command name="ТестXML" id="93">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>XML</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ТестXML</Action>
+		</Command>
+		<Command name="ТестСКД" id="94">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>СКД</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ТестСКД</Action>
+		</Command>
+		<Command name="ЗамерПроизводительности" id="77">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Замер производительности</v8:content>
 				</v8:item>
 			</Title>
 			<ToolTip>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Сбросить фильтр и показывать все переменные</v8:content>
+					<v8:content>Измерить время выполнения кода в редакторе</v8:content>
 				</v8:item>
 			</ToolTip>
-			<Action>ОчиститьФильтрПеременных</Action>
+			<Action>ЗамерПроизводительности</Action>
+		</Command>
+		<Command name="ЗагрузитьСхему" id="101">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Загрузить схему...</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Загрузить OpenAPI / JSON Schema из файла</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ЗагрузитьСхему</Action>
+		</Command>
+		<Command name="ОчиститьСхемы" id="102">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Очистить схемы</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Удалить все привязки схем к переменным</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ОчиститьСхемы</Action>
+		</Command>
+		<Command name="ТестСхемы" id="105">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>BSL (схемы)</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Загрузить тестовый BSL-код и Petstore OpenAPI-схему для проверки автодополнения</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ТестСхемы</Action>
 		</Command>
 	</Commands>
 </Form>

@@ -7,11 +7,13 @@
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8">  
   <link href="./decorations.css" rel="stylesheet">
   <link href="./tree/tree.css" rel="stylesheet">
+  <link href="./debugDialogs.css" rel="stylesheet">
   <style>
     html,
     body {
       height: 100%;
       margin: 0px;
+      overflow: hidden;
     }
     #container {
       height: 100%;
@@ -23,13 +25,44 @@
 
   <div id="container"></div>
   <div id="display">
+    <div id="display-resize-handle"></div>
     <div id="display-header">
-      <div id="display-title"></div>
-      <div id="display-close"></div>
+      <div id="display-tabs">
+        <div class="display-tab active" data-tab="variables">
+          <span class="tab-label"></span>
+          <span class="tab-badge" id="badge-variables"></span>
+        </div>
+        <div class="display-tab" data-tab="messages">
+          <span class="tab-label"></span>
+          <span class="tab-badge" id="badge-messages"></span>
+        </div>
+        <div class="display-tab" data-tab="errors">
+          <span class="tab-label"></span>
+          <span class="tab-badge" id="badge-errors"></span>
+        </div>
+        <div class="display-tab" data-tab="callstack">
+          <span class="tab-label"></span>
+          <span class="tab-badge" id="badge-callstack"></span>
+        </div>
+      </div>
+      <button id="display-collapse" title="Свернуть/развернуть">&#8943;</button>
     </div>
-    <div id="variables-display">
+    <div id="variables-display" class="display-content active">
       <div id="variables-tree"></div>
-    </div>    
+    </div>
+    <div id="messages-display" class="display-content">
+      <div id="messages-list"></div>
+    </div>
+    <div id="errors-display" class="display-content">
+      <div id="errors-list"></div>
+    </div>
+    <div id="callstack-display" class="display-content">
+      <div id="callstack-list"></div>
+    </div>
+  </div>
+  <div id="variables-context-menu" class="ctx-menu" style="display:none;">
+    <div class="ctx-menu-item" data-action="evaluate">Вычислить выражение</div>
+    <div class="ctx-menu-item" data-action="delete">Удалить из табло</div>
   </div>
   <button id="event-button"></button>
 
@@ -38,12 +71,15 @@
       return '';
     }
   </script>
+  <script src="./lezer-bsl.js"></script>
+  <script src="./bsl_ast.js"></script>
   <script src="./vs/loader.js"></script>
   <script src="./parsers.js"></script>
   <script src="./finder.js"></script>
   <script src="./bsl_helper.js"></script>
   <script src="./init.js"></script>
   <script src="./tree/tree.js"></script>
+  <script src="./debugDialogs.js"></script>
 
 </body>
 

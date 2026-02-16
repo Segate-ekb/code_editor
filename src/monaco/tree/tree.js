@@ -44,6 +44,17 @@ class Treeview {
             eventData.preventDefault();
           }
         }
+        else if (eventData.target.classList.contains('load-more-btn')) {
+          eventData.preventDefault();
+          let container = eventData.target.previousElementSibling;
+          if (container && container.classList.contains('overflow-items')) {
+            while (container.firstChild) {
+              eventData.target.parentNode.insertBefore(container.firstChild, container);
+            }
+            container.remove();
+          }
+          eventData.target.remove();
+        }
         else if (eventData.target.nodeName == 'SUMMARY' && eventData.target.parentNode.hasAttribute("open")) {
         }
         else {
@@ -76,17 +87,33 @@ class Treeview {
   };
   parseData(data) {
     let me = this;
-    let buf = Object.keys(data).map((key) => 
-      `<details><summary  id="${key}" data-label="${data[key].label}" data-requested="false" data-path="${data[key].path}" class="${data[key].class}">
-      <img class="icon" src="${me.imageBase}${data[key].icon ? data[key].icon : data[key].children ? 'structure.png' : 'undefined.png'}"> </img>
-      ${data[key].label}<span class="equal"> = </span>
-      ${Object.keys(data[key]).map((subkey) => {
-        return subkey == 'type' || subkey == 'value' ? `<span class="${subkey}">${data[key][subkey]}</span>` : ' ' 
+    let buf = Object.keys(data).map((key) => {
+      let node = data[key];
+      return `<details><summary  id="${key}" data-label="${node.label}" data-requested="false" data-path="${node.path}" class="${node.class}">
+      <img class="icon" src="${me.imageBase}${node.icon ? node.icon : node.children ? 'structure.png' : 'undefined.png'}"> </img>
+      ${node.label}<span class="equal"> = </span>
+      ${Object.keys(node).map((subkey) => {
+        return subkey == 'type' || subkey == 'value' ? `<span class="${subkey}">${node[subkey]}</span>` : ' ' 
       }).join(' ')}
       </summary>
-      ${data[key].children ? me.parseData(data[key].children) : ""}</details>`
-    );
+      ${node.children ? me.parseChildrenLimited(node.children, 10) : ""}</details>`;
+    });
     return buf.join("\n")
+  };
+  parseChildrenLimited(children, limit) {
+    let keys = Object.keys(children);
+    if (keys.length <= limit) {
+      return this.parseData(children);
+    }
+    let visibleData = {};
+    keys.slice(0, limit).forEach(k => visibleData[k] = children[k]);
+    let hiddenData = {};
+    keys.slice(limit).forEach(k => hiddenData[k] = children[k]);
+    let remaining = keys.length - limit;
+    let html = this.parseData(visibleData);
+    html += `<div class="overflow-items" style="display:none">${this.parseData(hiddenData)}</div>`;
+    html += `<div class="load-more-btn">ещё ${remaining}...</div>`;
+    return html;
   };
   open(id) {    
     let node = document.getElementById(id);

@@ -1,0 +1,16 @@
+﻿{
+    "name": "Тестовый объект",
+    "version": "1.0.0",
+    "enabled": true,
+    "count": 42,
+    "items": [
+        {"id": 1, "title": "Первый"},
+        {"id": 2, "title": "Второй"},
+        {"id": 3, "title": "Третий"}
+    ],
+    "settings": {
+        "theme": "dark",
+        "fontSize": 14,
+        "autoSave": false
+    }
+}

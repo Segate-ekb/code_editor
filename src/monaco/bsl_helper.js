@@ -3733,6 +3733,11 @@ class bslHelper {
 
 				if (this.completionIsAvailable()) {
 
+					// Schema-based property suggestions for dot-access (varName.)
+					let schemaCtx = this.requireSchemaProperty();
+					if (schemaCtx)
+						this.getSchemaPropertySuggestions(suggestions, schemaCtx);
+
 					this.getRefCompletion(suggestions);
 					this.getCompletionForCurrentObject(suggestions, context, token);
 
@@ -3811,6 +3816,13 @@ class bslHelper {
 			else {
 				if (this.requireType())
 					this.getTypesCompletion(suggestions, bslGlobals.types, monaco.languages.CompletionItemKind.Enum);
+
+				// Schema-based key suggestions for Map/Structure methods
+				if (!suggestions.length) {
+					let schemaContext = this.requireSchemaKey();
+					if (schemaContext)
+						this.getSchemaKeySuggestions(suggestions, schemaContext);
+				}
 			}
 
 		}
@@ -6015,15 +6027,30 @@ class bslHelper {
 
 			for (const [key, value] of Object.entries(data)) {
 
-				if (key.toLowerCase().startsWith(this.word) || value.prefix.toLowerCase().startsWith(this.word) || customSuggestions) {
+				let prefixLower = value.prefix.toLowerCase();
+				let keyLower = key.toLowerCase();
+
+				// Раскрываем синтаксис квадратных скобок из .st формата:
+				// "Проц[едура]" → short="проц", full="процедура"
+				let shortPrefix = prefixLower.replace(/\[.*?\]/g, '');
+				let fullPrefix = prefixLower.replace(/[\[\]]/g, '');
+
+				let matched = customSuggestions
+					|| keyLower.startsWith(this.word)
+					|| shortPrefix.startsWith(this.word)
+					|| fullPrefix.startsWith(this.word);
+
+				if (matched) {
 
 					suggestions.push({
-						label: value.prefix,
+						label: key,
 						kind: monaco.languages.CompletionItemKind.Snippet,
 						insertText: value.body,
 						insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-						detail: key,
-						documentation: { "value": this.prepareSnippetDocumentation(value.body) }
+						detail: value.prefix,
+						documentation: { "value": this.prepareSnippetDocumentation(value.body) },
+						filterText: fullPrefix + ' ' + key,
+						sortText: 'z' + key
 					});
 
 				}
@@ -6675,7 +6702,7 @@ class bslHelper {
 	static updateSnippets(data, replace) {
 
 		try {
-			let snippetsObj = JSON.parse(this.escapeJSON(data));
+			let snippetsObj = JSON.parse(data);
 			if (snippetsObj.hasOwnProperty('snippets')) {
 				if (replace) {
 					snippets = snippetsObj.snippets;
@@ -7889,5 +7916,938 @@ class bslHelper {
 		return location;
 
 	}
+
+	// #region OpenAPI / JSON-Schema support
+
+	/**
+	 * Resolves a $ref path in an OpenAPI document.
+	 * Supports local references like "#/components/schemas/Pet"
+	 * 
+	 * @param {object} root - the full OpenAPI document
+	 * @param {string} ref - the $ref string
+	 * @param {Set} visited - visited refs to avoid circular references
+	 * 
+	 * @returns {object|null} resolved schema object
+	 */
+	static resolveSchemaRef(root, ref, visited) {
+
+		if (!ref || typeof ref !== 'string' || !ref.startsWith('#/'))
+			return null;
+
+		if (!visited)
+			visited = new Set();
+
+		if (visited.has(ref))
+			return null;
+
+		visited.add(ref);
+
+		let path = ref.substring(2).split('/');
+		let current = root;
+
+		for (let segment of path) {
+			segment = segment.replace(/~1/g, '/').replace(/~0/g, '~');
+			if (current && typeof current === 'object' && current.hasOwnProperty(segment))
+				current = current[segment];
+			else
+				return null;
+		}
+
+		if (current && current.$ref)
+			return bslHelper.resolveSchemaRef(root, current.$ref, visited);
+
+		return current;
+
+	}
+
+	/**
+	 * Resolves the full schema, following $ref if present
+	 * 
+	 * @param {object} root - the full OpenAPI document
+	 * @param {object} schema - schema or $ref object
+	 * @param {Set} visited - visited refs to prevent cycles
+	 * 
+	 * @returns {object} resolved schema
+	 */
+	static resolveSchema(root, schema, visited) {
+
+		if (!schema)
+			return schema;
+
+		if (!visited)
+			visited = new Set();
+
+		if (schema.$ref) {
+			let resolved = bslHelper.resolveSchemaRef(root, schema.$ref, visited);
+			return resolved ? bslHelper.resolveSchema(root, resolved, new Set(visited)) : schema;
+		}
+
+		return schema;
+
+	}
+
+	/**
+	 * Extracts properties from a JSON/OpenAPI schema into
+	 * a flat map suitable for code completion.
+	 * 
+	 * @param {object} root - the full OpenAPI root document (for $ref resolution)
+	 * @param {object} schema - the type schema to flatten
+	 * @param {string} prefix - dot-prefix for nested properties (empty for top level)
+	 * @param {int} maxDepth - maximum recursion depth
+	 * @param {Set} visited - visited $refs to prevent infinite loops
+	 * 
+	 * @returns {object} map of { propertyName: { type, description, required, format, properties (nested), enum, items } }
+	 */
+	static flattenSchemaProperties(root, schema, prefix, maxDepth, visited) {
+
+		let result = {};
+
+		if (!schema || maxDepth <= 0)
+			return result;
+
+		if (!prefix) prefix = '';
+		if (!visited) visited = new Set();
+
+		let resolved = bslHelper.resolveSchema(root, schema, new Set(visited));
+
+		if (!resolved)
+			return result;
+
+		// Handle allOf / oneOf / anyOf compositions
+		if (resolved.allOf) {
+			for (let sub of resolved.allOf) {
+				let subResult = bslHelper.flattenSchemaProperties(root, sub, prefix, maxDepth, new Set(visited));
+				Object.assign(result, subResult);
+			}
+			return result;
+		}
+
+		if (resolved.oneOf || resolved.anyOf) {
+			let variants = resolved.oneOf || resolved.anyOf;
+			for (let sub of variants) {
+				let subResult = bslHelper.flattenSchemaProperties(root, sub, prefix, maxDepth, new Set(visited));
+				Object.assign(result, subResult);
+			}
+			return result;
+		}
+
+		// Handle array type — expose item properties
+		if (resolved.type === 'array' && resolved.items) {
+			return bslHelper.flattenSchemaProperties(root, resolved.items, prefix, maxDepth, new Set(visited));
+		}
+
+		// Handle object type with properties
+		if (resolved.properties) {
+
+			let requiredList = resolved.required || [];
+
+			for (const [propName, propSchema] of Object.entries(resolved.properties)) {
+
+				let propResolved = bslHelper.resolveSchema(root, propSchema, new Set(visited));
+				let fullName = prefix ? prefix + '.' + propName : propName;
+
+				let entry = {
+					name: propName,
+					type: propResolved ? (propResolved.type || 'object') : 'any',
+					description: propResolved ? (propResolved.description || '') : '',
+					required: requiredList.includes(propName),
+					format: propResolved ? (propResolved.format || '') : ''
+				};
+
+				if (propResolved && propResolved.enum)
+					entry.enum = propResolved.enum;
+
+				// Recursively resolve nested object properties
+				if (propResolved && propResolved.type === 'object' && propResolved.properties) {
+					entry.properties = bslHelper.flattenSchemaProperties(
+						root, propResolved, '', maxDepth - 1, new Set(visited)
+					);
+				}
+
+				// Resolve array items
+				if (propResolved && propResolved.type === 'array' && propResolved.items) {
+					let itemResolved = bslHelper.resolveSchema(root, propResolved.items, new Set(visited));
+					entry.itemType = itemResolved ? (itemResolved.type || 'object') : 'any';
+					if (itemResolved && itemResolved.type === 'object' && itemResolved.properties) {
+						entry.itemProperties = bslHelper.flattenSchemaProperties(
+							root, itemResolved, '', maxDepth - 1, new Set(visited)
+						);
+					}
+				}
+
+				result[fullName] = entry;
+			}
+
+		}
+
+		return result;
+
+	}
+
+	/**
+	 * Registers a variable with an OpenAPI/JSON-Schema type.
+	 * Parses the schema, resolves $ref, and stores flattened 
+	 * properties in the global schemaRegistry.
+	 * 
+	 * @param {string} variableName - the variable name in BSL code
+	 * @param {string|object} schema - OpenAPI spec (JSON string or object)
+	 * @param {string} typeName - name of the schema/component (e.g. "Pet")
+	 * 
+	 * @returns {true|object} true on success, {errorDescription} on error
+	 */
+	static setVariableSchema(variableName, schema, typeName) {
+
+		try {
+
+			let schemaObj = (typeof schema === 'string') ? JSON.parse(schema) : schema;
+			let typeSchema = null;
+			let root = schemaObj;
+
+			// OpenAPI 3.x — look in components.schemas
+			if (schemaObj.openapi && schemaObj.components && schemaObj.components.schemas) {
+				if (schemaObj.components.schemas[typeName])
+					typeSchema = schemaObj.components.schemas[typeName];
+			}
+			// Swagger 2.x — look in definitions
+			else if (schemaObj.swagger && schemaObj.definitions) {
+				if (schemaObj.definitions[typeName])
+					typeSchema = schemaObj.definitions[typeName];
+			}
+			// Plain JSON Schema — use as is
+			else if (schemaObj.type || schemaObj.properties || schemaObj.$ref) {
+				typeSchema = schemaObj;
+			}
+			// Maybe schema is the components/schemas object directly
+			else if (schemaObj[typeName]) {
+				typeSchema = schemaObj[typeName];
+			}
+
+			if (!typeSchema)
+				return { errorDescription: 'Type "' + typeName + '" not found in schema' };
+
+			let properties = bslHelper.flattenSchemaProperties(root, typeSchema, '', 5, new Set());
+
+			schemaRegistry.set(variableName.toLowerCase(), {
+				typeName: typeName,
+				properties: properties,
+				schema: typeSchema,
+				root: root
+			});
+
+			return true;
+
+		}
+		catch (e) {
+			return { errorDescription: e.message };
+		}
+
+	}
+
+	/**
+	 * Resolves a single property key access on a schema entry.
+	 * Given an entry (from schemaRegistry) and a key name, returns
+	 * the nested entry for that property's type, or null if not found
+	 * or the property is a primitive with no nested properties.
+	 *
+	 * @param {object} entry - schema entry { typeName, properties, root }
+	 * @param {string} key - property key name (case-insensitive)
+	 * @returns {object|null} new entry for the nested type
+	 */
+	resolveSchemaPropertyByKey(entry, key) {
+
+		if (!entry || !entry.properties)
+			return null;
+
+		let keyLower = key.toLowerCase();
+		let found = null;
+		let originalName = key;
+
+		for (const [propName, propEntry] of Object.entries(entry.properties)) {
+			if (propName.toLowerCase() === keyLower) {
+				found = propEntry;
+				originalName = propName;
+				break;
+			}
+		}
+
+		if (!found)
+			return null;
+
+		// Special marker '[]' — array element access (e.g. tags[0], tags.Получить(0))
+		// Unwrap array to its item schema
+		if (key === '[]') {
+			if (found.type === 'array' && found.itemProperties && Object.keys(found.itemProperties).length > 0) {
+				return {
+					typeName: (found.itemTypeName || originalName + ' item'),
+					properties: found.itemProperties,
+					schema: null,
+					root: entry.root
+				};
+			}
+			return null;
+		}
+
+		// Object with nested properties
+		if (found.properties && Object.keys(found.properties).length > 0) {
+			return {
+				typeName: originalName,
+				properties: found.properties,
+				schema: null,
+				root: entry.root
+			};
+		}
+
+		// Array with item properties (array of objects)
+		// When accessed by string key — still return array-level entry (for key suggestions)
+		if (found.type === 'array' && found.itemProperties && Object.keys(found.itemProperties).length > 0) {
+			return {
+				typeName: originalName + '[]',
+				properties: found.itemProperties,
+				schema: null,
+				root: entry.root
+			};
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Resolves a { base, chain } descriptor (from AST or regex) to a schema entry.
+	 * Looks up `base` in schemaRegistry, then walks each key in `chain`
+	 * through resolveSchemaPropertyByKey.
+	 *
+	 * @param {string} base - lowercased variable name
+	 * @param {string[]} chain - ordered list of property keys to resolve
+	 * @returns {object|null} schema entry if resolvable
+	 */
+	resolveSchemaChain(base, chain) {
+
+		if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+			bslAstService.debugOut('[Schema]', '#a0f', 'log',
+				'resolveSchemaChain: base=' + JSON.stringify(base) + ', chain=' + JSON.stringify(chain),
+				'| registry has:', schemaRegistry.has(base));
+
+		// Cycle detection for recursive inference
+		if (!this._schemaInferring) this._schemaInferring = new Set();
+		if (this._schemaInferring.has(base)) {
+			if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#fa0', 'warn',
+					'  cycle detected for', JSON.stringify(base));
+			return null;
+		}
+
+		let entry;
+
+		if (schemaRegistry.has(base)) {
+			entry = schemaRegistry.get(base);
+		} else {
+			// Base not directly registered — try to infer from assignment
+			if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#a0f', 'log',
+					'  base not in registry, inferring', JSON.stringify(base));
+			this._schemaInferring.add(base);
+			try {
+				entry = this.inferVariableSchema(base);
+			} finally {
+				this._schemaInferring.delete(base);
+			}
+			if (!entry) return null;
+		}
+
+		for (let key of chain) {
+			// Special marker '[]' — array element access
+			// If current entry is already unwrapped array (typeName ends with []),
+			// it means properties already point to item schema — just continue
+			if (key === '[]') {
+				if (entry.typeName && entry.typeName.endsWith('[]')) {
+					// Already unwrapped — properties are item properties, continue
+					continue;
+				}
+				// Otherwise try to unwrap via resolveSchemaPropertyByKey
+			}
+			let prev = entry;
+			entry = this.resolveSchemaPropertyByKey(entry, key);
+			if (!entry) {
+				if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+					bslAstService.debugOut('[Schema]', '#fa0', 'warn',
+						'  chain broken at key=' + JSON.stringify(key));
+				return null;
+			}
+			if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#a0f', 'log',
+					'  step: key=' + JSON.stringify(key) + ' →', entry.type || 'object',
+					entry.properties ? '(' + Object.keys(entry.properties).length + ' props)' : '');
+		}
+
+		if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+			bslAstService.debugOut('[Schema]', '#a0f', 'log',
+				'  → resolved:', entry.type || 'object',
+				entry.properties ? Object.keys(entry.properties).join(', ') : '(no props)');
+
+		return entry;
+
+	}
+
+	/**
+	 * Parses a complete expression and resolves it to a schema entry.
+	 * Uses AST (lezer-bsl) when available, regex as fallback.
+	 *
+	 * Examples:
+	 *   "pet"                       → Pet entry
+	 *   "pet.получить(\"category\")"  → Category entry
+	 *   "pet[\"category\"]"         → Category entry
+	 *   "pet.category"              → Category entry (dot-property)
+	 *
+	 * @param {string} text - text expression to parse
+	 * @returns {object|null} schema entry if resolvable
+	 */
+	resolveSchemaExpression(text) {
+
+		// --- AST path (preferred) ---
+		if (typeof bslAstService !== 'undefined' && bslAstService.getTree()) {
+			if (bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#a0f', 'log',
+					'resolveSchemaExpression (AST path):', JSON.stringify(text));
+			let parsed = bslAstService.parseExpressionText(text);
+
+			// If full text failed, it may contain an assignment prefix
+			// (e.g. "тег = Pet.tags[0]" → extract "Pet.tags[0]")
+			if (!parsed) {
+				let eqIdx = text.lastIndexOf('=');
+				if (eqIdx >= 0) {
+					let rhs = text.substring(eqIdx + 1).trim();
+					if (rhs) {
+						if (bslAstService.debug)
+							bslAstService.debugOut('[Schema]', '#a0f', 'log',
+								'  retrying with RHS after =:', JSON.stringify(rhs));
+						parsed = bslAstService.parseExpressionText(rhs);
+					}
+				}
+			}
+
+			if (parsed)
+				return this.resolveSchemaChain(parsed.base, parsed.chain);
+			if (bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#fa0', 'warn',
+					'  AST parse returned null, regex fallback DISABLED');
+			return null;
+		}
+
+		// --- Regex fallback (only when AST is not available) ---
+		if (typeof bslAstService !== 'undefined' && bslAstService.debug)
+			bslAstService.debugOut('[Schema]', '#fa0', 'warn',
+				'resolveSchemaExpression (REGEX fallback, AST tree=' + 
+				(typeof bslAstService !== 'undefined' ? String(!!bslAstService.getTree()) : 'N/A') +
+				', LezerBsl=' + (typeof LezerBsl !== 'undefined' ? 'loaded' : 'NOT loaded') +
+				'):', JSON.stringify(text));
+
+		let remaining = text.trim();
+		let chain = [];
+
+		let methodRe = /\.\s*(?:вставить|insert|свойство|property|получить|get|установить|set|удалить|delete)\s*\(\s*"([^"]*)"\s*\)\s*$/i;
+		let methodNumRe = /\.\s*(?:вставить|insert|свойство|property|получить|get|установить|set|удалить|delete)\s*\(\s*(\d+)\s*\)\s*$/i;
+		let bracketRe = /\[\s*"([^"]*)"\s*\]\s*$/;
+		let numBracketRe = /\[\s*(?:\d+|[\w\u0410-\u044F\u0401\u0451]+)\s*\]\s*$/;
+		let dotPropRe = /\.\s*([\w\u0410-\u044F\u0401\u0451]+)\s*$/;
+
+		while (true) {
+			let m = remaining.match(methodRe);
+			if (m) {
+				chain.unshift(m[1]);
+				remaining = remaining.substring(0, remaining.length - m[0].length);
+				continue;
+			}
+			// Getter with numeric arg: .Получить(0) → array element
+			m = remaining.match(methodNumRe);
+			if (m) {
+				chain.unshift('[]');
+				remaining = remaining.substring(0, remaining.length - m[0].length);
+				continue;
+			}
+			m = remaining.match(bracketRe);
+			if (m) {
+				chain.unshift(m[1]);
+				remaining = remaining.substring(0, remaining.length - m[0].length);
+				continue;
+			}
+			m = remaining.match(dotPropRe);
+			if (m) {
+				chain.unshift(m[1]);
+				remaining = remaining.substring(0, remaining.length - m[0].length);
+				continue;
+			}
+			// Numeric/variable bracket: [0], [1], [i] → array element
+			m = remaining.match(numBracketRe);
+			if (m) {
+				chain.unshift('[]');
+				remaining = remaining.substring(0, remaining.length - m[0].length);
+				continue;
+			}
+			break;
+		}
+
+		let varMatch = remaining.match(/([\w\u0410-\u044F\u0401\u0451]+)\s*$/);
+		if (!varMatch)
+			return null;
+
+		let varName = varMatch[1].toLowerCase();
+		return this.resolveSchemaChain(varName, chain);
+
+	}
+
+	/**
+	 * Check if line `lineNum` (or the line above) contains a controlling comment
+	 *   // @schema TypeName
+	 * Uses the ORIGINAL (non-lowercased) line text.
+	 *
+	 * @param {number} lineNum - 1-based line number
+	 * @param {RegExp} re - precompiled regex for the comment
+	 * @returns {string|null} type name from comment
+	 */
+	_extractSchemaCommentFromLine(lineNum, re) {
+
+		let lineText = this.model.getLineContent(lineNum);
+		let m = lineText.match(re);
+		if (m) return m[1];
+
+		// Check line directly above
+		if (lineNum > 1) {
+			let prevLine = this.model.getLineContent(lineNum - 1);
+			m = prevLine.match(re);
+			if (m) return m[1];
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Scans the document for an assignment pattern `varName = <expr>`
+	 * and resolves the right-hand side as a schema expression.
+	 * Scans backward from cursor first (assignment is usually before usage),
+	 * then forward as a fallback.
+	 *
+	 * Example: Категория = Pet.Получить("category")
+	 *   → resolves to the Category schema entry
+	 *
+	 * @param {string} varName - lowercased variable name to look for
+	 * @returns {object|null} schema entry if the assignment RHS is schema-resolvable
+	 */
+	inferVariableSchema(varName) {
+
+		// --- AST path (preferred): find nearest assignment before cursor ---
+		if (typeof bslAstService !== 'undefined' && bslAstService.getTree()) {
+
+			if (bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#a0f', 'log',
+					'inferVariableSchema (AST path): var=' + JSON.stringify(varName),
+					'line=' + this.lineNumber + ' col=' + this.column);
+
+			let cursorOffset = bslAstService.positionToOffset(this.lineNumber, this.column);
+			let chainInfo = bslAstService.inferVariableType(varName, cursorOffset);
+
+			if (chainInfo) {
+				if (bslAstService.debug)
+					bslAstService.debugOut('[Schema]', '#a0f', 'log',
+						'  → chain from AST:', JSON.stringify(chainInfo));
+				return this.resolveSchemaChain(chainInfo.base, chainInfo.chain);
+			}
+
+			// AST found no assignment — return null (don't fall through to regex)
+			if (bslAstService.debug)
+				bslAstService.debugOut('[Schema]', '#fa0', 'warn',
+					'  AST found no assignment for', JSON.stringify(varName));
+			return null;
+
+		}
+
+		// --- Regex fallback (when AST is not available) ---
+		let lineCount = this.model.getLineCount();
+		let escapedName = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		let assignRegex = new RegExp(escapedName + '\\s*=\\s*(.+?)\\s*;?\\s*$', 'i');
+
+		// Also check ForEach: "для каждого <var> из <collection> цикл"
+		let forEachRegex = new RegExp(
+			'(?:для\\s+каждого|for\\s+each)\\s+' + escapedName +
+			'\\s+(?:из|in)\\s+(.+?)\\s+(?:цикл|do)', 'i');
+
+		// Regex for controlling comment: // @schema TypeName
+		let schemaCommentRe = /\/\/\s*@schema\s+([\w\u0410-\u044F\u0401\u0451]+)/i;
+
+		for (let i = this.lineNumber - 1; i >= 1; i--) {
+
+			let lineText = this.model.getLineContent(i).toLowerCase().trim();
+
+			// ForEach: variable gets element type → append '[]'
+			let mfe = lineText.match(forEachRegex);
+			if (mfe) {
+				let collectionExpr = mfe[1].trim();
+				let entry = this.resolveSchemaExpression(collectionExpr);
+				if (entry) {
+					// Unwrap array: if entry is array-typed, return item entry
+					if (entry.typeName && entry.typeName.endsWith('[]')) {
+						// Already unwrapped
+						return entry;
+					}
+					// Try to unwrap via resolveSchemaPropertyByKey with '[]'
+					let itemEntry = this.resolveSchemaPropertyByKey(entry, '[]');
+					return itemEntry || entry;
+				}
+			}
+
+			let m = lineText.match(assignRegex);
+
+			if (m) {
+				// Check for // @schema TypeName on this line or the line above
+				let schemaType = this._extractSchemaCommentFromLine(i, schemaCommentRe);
+				if (schemaType) {
+					let tKey = schemaType.toLowerCase();
+					if (schemaRegistry.has(tKey))
+						return schemaRegistry.get(tKey);
+				}
+				let rhs = m[1].replace(/;\s*$/, '').trim();
+				let entry = this.resolveSchemaExpression(rhs);
+				if (entry)
+					return entry;
+			}
+
+		}
+
+		for (let i = this.lineNumber; i <= lineCount; i++) {
+
+			let lineText = this.model.getLineContent(i).toLowerCase().trim();
+			let m = lineText.match(assignRegex);
+
+			if (m) {
+				// Check for // @schema TypeName on this line or the line above
+				let schemaType = this._extractSchemaCommentFromLine(i, schemaCommentRe);
+				if (schemaType) {
+					let tKey = schemaType.toLowerCase();
+					if (schemaRegistry.has(tKey))
+						return schemaRegistry.get(tKey);
+				}
+				let rhs = m[1].replace(/;\s*$/, '').trim();
+				let entry = this.resolveSchemaExpression(rhs);
+				if (entry)
+					return entry;
+			}
+
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Detects if the cursor is inside a Map/Structure key context,
+	 * supporting simple, chained, and inferred variable access:
+	 *   varName.Получить("      — simple key access
+	 *   varName["               — bracket key access
+	 *   expr.Получить("a").Получить("  — chained access
+	 *   Категория.Получить("    — inferred from: Категория = Pet.Получить("category")
+	 *
+	 * @returns {object|null} { entry, partial } or null
+	 */
+	requireSchemaKey() {
+
+		let text = this.textBeforePosition;
+		let cyr = '[\\w\\u0410-\\u044F\\u0401\\u0451]';
+		let methods = '(?:вставить|insert|свойство|property|получить|get|установить|set|удалить|delete)';
+
+		// ---- Simple case: varName.Method("partial or varName["partial ----
+		let match = text.match(
+			new RegExp('(' + cyr + '+)\\s*\\.\\s*' + methods + '\\s*\\(\\s*"([^"]*)?$', 'i')
+		);
+		if (!match)
+			match = text.match(new RegExp('(' + cyr + '+)\\s*\\[\\s*"([^"]*)?$', 'i'));
+
+		if (match) {
+			let varName = match[1].toLowerCase();
+			let entry = schemaRegistry.has(varName) ? schemaRegistry.get(varName) : null;
+			if (!entry)
+				entry = this.inferVariableSchema(varName);
+			if (entry)
+				return { entry: entry, partial: match[2] || '' };
+		}
+
+		// ---- Chained case: expr.Method("key").Method("partial ----
+		let tailMatch = text.match(
+			new RegExp('\\.\\s*' + methods + '\\s*\\(\\s*"([^"]*)?$', 'i')
+		);
+		let partial = '';
+		let remaining = text;
+
+		if (tailMatch) {
+			partial = tailMatch[1] || '';
+			remaining = text.substring(0, text.length - tailMatch[0].length);
+		} else {
+			let bracketMatch = text.match(/\[\s*"([^"]*)?$/);
+			if (bracketMatch) {
+				partial = bracketMatch[1] || '';
+				remaining = text.substring(0, text.length - bracketMatch[0].length);
+			} else {
+				return null;
+			}
+		}
+
+		let entry = this.resolveSchemaExpression(remaining);
+		if (entry)
+			return { entry: entry, partial: partial };
+
+		return null;
+
+	}
+
+	/**
+	 * Detects if the cursor is in a dot-access context for a schema-typed variable,
+	 * supporting simple, chained, and inferred access:
+	 *   varName.                — simple dot-access
+	 *   expr.Получить("key").   — chained dot-access
+	 *   Категория.              — inferred from assignment
+	 *
+	 * @returns {object|null} { entry } or null
+	 */
+	requireSchemaProperty() {
+
+		let _debug = (typeof bslAstService !== 'undefined' && bslAstService.debug);
+
+		if (this.lastOperator != '"') {
+
+			// Simple case: varName.
+			let objName = this.getLastNExpression(2);
+
+			if (_debug)
+				bslAstService.debugOut('[Schema]', '#a0f', 'log',
+					'requireSchemaProperty: objName=' + JSON.stringify(objName),
+					'lastChar=' + JSON.stringify(this.getLastCharacter()),
+					'lastOp=' + JSON.stringify(this.lastOperator));
+
+			if (objName && this.getLastCharacter() == '.' && /^[\w\u0410-\u044F\u0401\u0451]+$/.test(objName)) {
+
+				let varName = objName.toLowerCase();
+
+				if (schemaRegistry.has(varName))
+					return { entry: schemaRegistry.get(varName) };
+
+				let inferred = this.inferVariableSchema(varName);
+				if (inferred)
+					return { entry: inferred };
+
+			}
+
+			// Chained dot access: strip trailing .word and resolve expression
+			let text = this.textBeforePosition;
+			let dotMatch = text.match(/\.\s*([\w\u0410-\u044F\u0401\u0451]*)\s*$/);
+
+			if (dotMatch) {
+				let remaining = text.substring(0, text.length - dotMatch[0].length);
+
+				// Strip assignment prefix: "var = expr" → "expr"
+				// Avoid stripping comparison operators (==, >=, <=, <>)
+				let eqIdx = remaining.lastIndexOf('=');
+				if (eqIdx >= 0) {
+					let prevCh = eqIdx > 0 ? remaining.charAt(eqIdx - 1) : '';
+					let nextCh = eqIdx < remaining.length - 1 ? remaining.charAt(eqIdx + 1) : '';
+					if (prevCh !== '<' && prevCh !== '>' && prevCh !== '!' && nextCh !== '=') {
+						remaining = remaining.substring(eqIdx + 1).trim();
+					}
+				}
+
+				if (_debug)
+					bslAstService.debugOut('[Schema]', '#a0f', 'log',
+						'  chained path: remaining=' + JSON.stringify(remaining));
+				let entry = this.resolveSchemaExpression(remaining);
+				if (_debug)
+					bslAstService.debugOut('[Schema]', '#a0f', 'log',
+						'  chained result:', entry ? ('OK, typeName=' + entry.typeName) : 'null');
+				if (entry)
+					return { entry: entry };
+			}
+
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Formats schema type information for display
+	 * 
+	 * @param {object} propEntry - property entry from flattenSchemaProperties
+	 * 
+	 * @returns {string} formatted type string
+	 */
+	formatSchemaType(propEntry) {
+
+		let type = propEntry.type || 'any';
+
+		if (propEntry.format)
+			type += ' (' + propEntry.format + ')';
+
+		if (propEntry.type === 'array' && propEntry.itemType)
+			type = 'array<' + propEntry.itemType + '>';
+
+		if (propEntry.enum)
+			type += ' [' + propEntry.enum.join(', ') + ']';
+
+		return type;
+
+	}
+
+	/**
+	 * Builds CompletionItems for Map/Structure key suggestions
+	 * based on schema properties.
+	 * 
+	 * @param {array} suggestions - suggestions array to fill
+	 * @param {object} context - { entry, partial } from requireSchemaKey
+	 * 
+	 * @returns {bool} true if suggestions were added
+	 */
+	getSchemaKeySuggestions(suggestions, context) {
+
+		let entry = context.entry;
+		let partial = context.partial;
+
+		if (!entry || !entry.properties)
+			return false;
+
+		let added = false;
+		let partialLower = partial ? partial.toLowerCase() : '';
+
+		for (const [propName, propEntry] of Object.entries(entry.properties)) {
+
+			if (partialLower && !propName.toLowerCase().startsWith(partialLower))
+				continue;
+
+			let detail = this.formatSchemaType(propEntry);
+
+			if (propEntry.required)
+				detail += ' *required';
+
+			let documentation = propEntry.description || '';
+			if (documentation && propEntry.type === 'object' && propEntry.properties) {
+				let nested = Object.keys(propEntry.properties).join(', ');
+				documentation += '\n\nProperties: ' + nested;
+			}
+
+			suggestions.push({
+				label: propName,
+				kind: monaco.languages.CompletionItemKind.Value,
+				insertText: propName + '"',
+				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+				detail: detail,
+				documentation: documentation,
+				sortText: propEntry.required ? '0_' + propName : '1_' + propName
+			});
+
+			added = true;
+		}
+
+		return added;
+
+	}
+
+	/**
+	 * Builds CompletionItems for dot-access on schema-typed variables.
+	 * Provides both schema properties and standard Map/Structure methods.
+	 * 
+	 * @param {array} suggestions - suggestions array to fill
+	 * @param {object} context - { entry } from requireSchemaProperty
+	 * 
+	 * @returns {bool} true if suggestions were added
+	 */
+	getSchemaPropertySuggestions(suggestions, context) {
+
+		let entry = context.entry;
+
+		if (!entry || !entry.properties)
+			return false;
+
+		let word = this.word;
+		let added = false;
+
+		// Add schema properties as fields
+		for (const [propName, propEntry] of Object.entries(entry.properties)) {
+
+			if (word && !propName.toLowerCase().startsWith(word))
+				continue;
+
+			let detail = this.formatSchemaType(propEntry);
+
+			if (propEntry.required)
+				detail += ' *required';
+
+			let documentation = propEntry.description || '';
+
+			let command = null;
+
+			// If property has nested properties, enable chained completion
+			if (propEntry.type === 'object' && propEntry.properties) {
+
+				// Register nested schema for chained access
+				let nestedVarKey = entry.typeName.toLowerCase() + '.' + propName.toLowerCase();
+
+				if (!schemaRegistry.has(nestedVarKey)) {
+					schemaRegistry.set(nestedVarKey, {
+						typeName: propName,
+						properties: propEntry.properties,
+						schema: null,
+						root: entry.root
+					});
+				}
+
+				let nested = Object.keys(propEntry.properties).join(', ');
+				documentation += (documentation ? '\n\n' : '') + 'Properties: ' + nested;
+			}
+
+			suggestions.push({
+				label: propName,
+				kind: monaco.languages.CompletionItemKind.Field,
+				insertText: propName,
+				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+				detail: '[' + entry.typeName + '] ' + detail,
+				documentation: documentation,
+				command: command,
+				sortText: propEntry.required ? '0_' + propName : '1_' + propName
+			});
+
+			added = true;
+		}
+
+		// Add standard Map/Structure methods
+		let methods = engLang
+			? ['Insert', 'Get', 'Property', 'Delete', 'Count', 'Clear']
+			: ['Вставить', 'Получить', 'Свойство', 'Удалить', 'Количество', 'Очистить'];
+
+		let methodSignatures = engLang
+			? ['(Key, Value)', '(Key)', '(Key, Value)', '(Key)', '()', '()']
+			: ['(Ключ, Значение)', '(Ключ)', '(Ключ, Значение)', '(Ключ)', '()', '()'];
+
+		for (let i = 0; i < methods.length; i++) {
+
+			let methodName = methods[i];
+
+			if (word && !methodName.toLowerCase().startsWith(word))
+				continue;
+
+			suggestions.push({
+				label: methodName,
+				kind: monaco.languages.CompletionItemKind.Method,
+				insertText: methodName + '($0)',
+				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+				detail: methodSignatures[i],
+				documentation: entry.typeName + '.' + methodName,
+				sortText: '2_' + methodName
+			});
+
+			added = true;
+		}
+
+		return added;
+
+	}
+
+	// #endregion
 
 }

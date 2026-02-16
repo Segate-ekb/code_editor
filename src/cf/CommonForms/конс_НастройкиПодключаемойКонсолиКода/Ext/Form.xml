@@ -47,7 +47,6 @@
 		</InputField>
 		<InputField name="ПутьКШаблонамКода" id="27">
 			<DataPath>ПутьКШаблонамКода</DataPath>
-			<Visible>false</Visible>
 			<ToolTip>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
@@ -114,6 +113,19 @@
 			<CheckBoxType>Switcher</CheckBoxType>
 			<ContextMenu name="ОтображениеСтрокиСостоянияКонтекстноеМеню" id="17"/>
 			<ExtendedTooltip name="ОтображениеСтрокиСостоянияРасширеннаяПодсказка" id="18"/>
+		</CheckBoxField>
+		<CheckBoxField name="ОтключитьВстроенныеСниппеты" id="31">
+			<DataPath>ОтключитьВстроенныеСниппеты</DataPath>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Отключить стандартные встроенные шаблоны кода (сниппеты). Полезно при использовании собственного файла .st для избежания дубликатов</v8:content>
+				</v8:item>
+			</ToolTip>
+			<ToolTipRepresentation>Button</ToolTipRepresentation>
+			<CheckBoxType>Switcher</CheckBoxType>
+			<ContextMenu name="ОтключитьВстроенныеСниппетыКонтекстноеМеню" id="32"/>
+			<ExtendedTooltip name="ОтключитьВстроенныеСниппетыРасширеннаяПодсказка" id="33"/>
 		</CheckBoxField>
 	</ChildItems>
 	<Attributes>
@@ -200,6 +212,17 @@
 				<v8:item>
 					<v8:lang>ru</v8:lang>
 					<v8:content>Отображение строки состояния</v8:content>
+				</v8:item>
+			</Title>
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ОтключитьВстроенныеСниппеты" id="34">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Отключить встроенные сниппеты</v8:content>
 				</v8:item>
 			</Title>
 			<Type>

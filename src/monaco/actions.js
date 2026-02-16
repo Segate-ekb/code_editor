@@ -226,6 +226,45 @@ define(['vs/editor/editor.main'], function () {
 
             }
 
+            // Debugger context menu actions
+            if (debugUsingDebugger) {
+
+                actions.toggle_breakpoint_bsl = {
+                    label: 'Установить/снять точку останова',
+                    key: monaco.KeyCode.F9,
+                    cmd: monaco.KeyMod.chord(monaco.KeyCode.F9),
+                    order: 3.0,
+                    callback: function (ed) {
+                        let line = getCurrentLine();
+                        updateBreakpoints(line);
+                        return null;
+                    }
+                };
+
+                actions.remove_all_breakpoints_bsl = {
+                    label: 'Убрать все точки останова',
+                    key: null,
+                    cmd: null,
+                    order: 3.1,
+                    callback: function (ed) {
+                        removeAllBreakpoints();
+                        return null;
+                    }
+                };
+
+                actions.evaluate_expression_bsl = {
+                    label: 'Вычислить выражение',
+                    key: monaco.KeyMod.Shift | monaco.KeyCode.F9,
+                    cmd: monaco.KeyMod.chord(monaco.KeyMod.Shift | monaco.KeyCode.F9),
+                    order: 3.2,
+                    callback: function (ed) {
+                        evaluateExpression();
+                        return null;
+                    }
+                };
+
+            }
+
         }
         
         return actions;
@@ -286,6 +325,79 @@ define(['vs/editor/editor.main'], function () {
             order: 0,
             callback: function (ed) {
                 jumpToBracket();
+                return null;
+            }
+        },
+        debugStartOrContinue: {
+            label: 'Начать/продолжить отладку',
+            key: monaco.KeyCode.F5,
+            cmd: monaco.KeyMod.chord(monaco.KeyCode.F5),
+            order: 0,
+            callback: function (ed) {
+                if (debugUsingDebugger) {
+                    if (isDebugMode()) {
+                        continueDebugging();
+                    } else {
+                        startDebugging();
+                    }
+                }
+                return null;
+            }
+        },
+        debugStepOver: {
+            label: 'Шагнуть через',
+            key: monaco.KeyCode.F10,
+            cmd: monaco.KeyMod.chord(monaco.KeyCode.F10),
+            order: 0,
+            callback: function (ed) {
+                if (debugUsingDebugger) {
+                    if (isDebugMode()) {
+                        stepOver();
+                    } else {
+                        startDebugging();
+                    }
+                }
+                return null;
+            }
+        },
+        debugStepInto: {
+            label: 'Шагнуть в',
+            key: monaco.KeyCode.F11,
+            cmd: monaco.KeyMod.chord(monaco.KeyCode.F11),
+            order: 0,
+            callback: function (ed) {
+                if (debugUsingDebugger) {
+                    if (isDebugMode()) {
+                        stepInto();
+                    } else {
+                        startDebugging();
+                    }
+                }
+                return null;
+            }
+        },
+        debugStop: {
+            label: 'Остановить отладку',
+            key: monaco.KeyMod.Shift | monaco.KeyCode.F5,
+            cmd: monaco.KeyMod.chord(monaco.KeyMod.Shift | monaco.KeyCode.F5),
+            order: 0,
+            callback: function (ed) {
+                if (debugUsingDebugger && isDebugMode()) {
+                    stopDebugging();
+                }
+                return null;
+            }
+        },
+        debugToggleBreakpoint: {
+            label: 'Точка останова',
+            key: monaco.KeyCode.F9,
+            cmd: monaco.KeyMod.chord(monaco.KeyCode.F9),
+            order: 0,
+            callback: function (ed) {
+                if (debugUsingDebugger) {
+                    let line = getCurrentLine();
+                    updateBreakpoints(line);
+                }
                 return null;
             }
         }
