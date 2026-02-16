@@ -252,10 +252,6 @@
 		<ChildObjects>
 			<Language>Русский</Language>
 			<Subsystem>конс_ПодключаемаяКонсольКода</Subsystem>
-			<CommonPicture>конс_ДлительнаяОперация</CommonPicture>
-			<CommonPicture>конс_ОформлениеЗнакВосклицательныйЗнак</CommonPicture>
-			<CommonPicture>конс_Стоп</CommonPicture>
-			<CommonPicture>конс_ТочкаОстанова</CommonPicture>
 			<CommonTemplate>конс_ВстроенныеФункцииВМ</CommonTemplate>
 			<CommonTemplate>конс_Грамматика</CommonTemplate>
 			<CommonTemplate>конс_КонсольКода</CommonTemplate>
@@ -272,7 +268,6 @@
 			<CommonModule>конс_ВМ_ВызовСервера</CommonModule>
 			<CommonModule>конс_ВМ_КлиентСервер</CommonModule>
 			<CommonModule>конс_ВМ_ОпКодыКлиентСервер</CommonModule>
-			<CommonModule>конс_ВМ_ПопыткиКлиентСервер</CommonModule>
 			<CommonModule>конс_КомпиляцияКлиентСервер</CommonModule>
 			<CommonModule>конс_КомпиляцияСемантикаКлиентСервер</CommonModule>
 			<CommonModule>конс_ПодключаемаяКонсольВызовСервера</CommonModule>
