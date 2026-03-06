@@ -17,7 +17,6 @@
 	<ChildItems>
 		<InputField name="Тема" id="21">
 			<DataPath>Тема</DataPath>
-			<Visible>false</Visible>
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
@@ -25,6 +24,60 @@
 				</v8:item>
 			</Title>
 			<DropListButton>true</DropListButton>
+			<ChoiceList>
+				<xr:Item>
+					<xr:Presentation/>
+					<xr:CheckState>0</xr:CheckState>
+					<xr:Value xsi:type="FormChoiceListDesTimeValue">
+						<Presentation>
+							<v8:item>
+								<v8:lang>ru</v8:lang>
+								<v8:content>Светлая (Monaco bsl-white)</v8:content>
+							</v8:item>
+						</Presentation>
+						<Value xsi:type="xs:string">СветлаяТема</Value>
+					</xr:Value>
+				</xr:Item>
+				<xr:Item>
+					<xr:Presentation/>
+					<xr:CheckState>0</xr:CheckState>
+					<xr:Value xsi:type="FormChoiceListDesTimeValue">
+						<Presentation>
+							<v8:item>
+								<v8:lang>ru</v8:lang>
+								<v8:content>Светлая (Высокий контраст hc-light)</v8:content>
+							</v8:item>
+						</Presentation>
+						<Value xsi:type="xs:string">СветлаяТемаПлюс</Value>
+					</xr:Value>
+				</xr:Item>
+				<xr:Item>
+					<xr:Presentation/>
+					<xr:CheckState>0</xr:CheckState>
+					<xr:Value xsi:type="FormChoiceListDesTimeValue">
+						<Presentation>
+							<v8:item>
+								<v8:lang>ru</v8:lang>
+								<v8:content>Темная (Monaco bsl-dark)</v8:content>
+							</v8:item>
+						</Presentation>
+						<Value xsi:type="xs:string">ТемнаяТема</Value>
+					</xr:Value>
+				</xr:Item>
+				<xr:Item>
+					<xr:Presentation/>
+					<xr:CheckState>0</xr:CheckState>
+					<xr:Value xsi:type="FormChoiceListDesTimeValue">
+						<Presentation>
+							<v8:item>
+								<v8:lang>ru</v8:lang>
+								<v8:content>Темная (Высокий контраст hc-dark)</v8:content>
+							</v8:item>
+						</Presentation>
+						<Value xsi:type="xs:string">ТемнаяТемаПлюс</Value>
+					</xr:Value>
+				</xr:Item>
+			</ChoiceList>
 			<ContextMenu name="ТемаКонтекстноеМеню" id="22"/>
 			<ExtendedTooltip name="ТемаРасширеннаяПодсказка" id="23"/>
 		</InputField>
