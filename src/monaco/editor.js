@@ -484,6 +484,27 @@ define(['bslGlobals', 'bslMetadata', 'snippets', 'bsl_language', 'vs/editor/edit
 
   }
 
+  /**
+   * Toggles the entire debug UI: toolbar, glyph margin, and bottom display panel.
+   * When disabled, also stops the active debug session and clears breakpoints.
+   *
+   * @param {boolean} enabled — true to show debug panels, false to hide them
+   */
+  setDebugPanels = function (enabled) {
+
+    if (enabled) {
+      setUsingDebugger(true);
+      showDisplayPanel();
+    } else {
+      if (debugModeFlag) {
+        setDebugMode(0);
+      }
+      setUsingDebugger(false);
+      hideDisplayPanel();
+    }
+
+  }
+
   updateBreakpoints = function (line) {
 
     if (line != undefined) {

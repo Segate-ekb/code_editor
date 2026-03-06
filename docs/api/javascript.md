@@ -156,6 +156,27 @@
 | `disableContextMenu()` | Убрать контекстное меню |
 | `showVariablesDescription(json)` | Показать панель переменных |
 
+## Отладка
+
+| Функция | Описание |
+|---------|----------|
+| `setDebugPanels(enabled)` | Включить/отключить весь UI отладки: панель инструментов, glyph margin и нижнее табло. При отключении завершает активную сессию |
+| `setUsingDebugger(enabled)` | Включить/отключить тулбар и glyph margin (без нижнего табло) |
+| `setDebugMode(mode)` | Режим отладки: `1` — активна, `0` — нет |
+| `isDebugMode()` | Проверить, активен ли режим отладки |
+| `updateBreakpoints(line)` | Переключить точку останова на строке |
+| `getBreakpoints()` | JSON-массив номеров строк с точками останова |
+| `removeAllBreakpoints()` | Удалить все точки останова |
+| `setCurrentDebugLine(line)` | Подсветить текущую строку |
+| `deleteCurrentDebugLine()` | Убрать подсветку |
+| `startDebugging()` | Начать отладку |
+| `continueDebugging()` | Продолжить до точки останова |
+| `stepOver()` | Шагнуть через (F10) |
+| `stepInto()` | Шагнуть в (F11) |
+| `stopDebugging()` | Остановить отладку |
+| `evaluateExpression()` | Вычислить выделенное выражение |
+| `toggleStopOnError()` | Переключить остановку по ошибке |
+
 ## События (JS → 1C)
 
 | Событие | Когда | Параметры |

@@ -142,6 +142,12 @@
 					</Button>
 				</ChildItems>
 			</Popup>
+			<Button name="ПереключитьРежимОтладки" id="106">
+				<Type>CommandBarButton</Type>
+				<Check>true</Check>
+				<CommandName>Form.Command.ПереключитьРежимОтладки</CommandName>
+				<ExtendedTooltip name="ПереключитьРежимОтладкиРасширеннаяПодсказка" id="107"/>
+			</Button>
 			<Popup name="Схема" id="95">
 				<Title>
 					<v8:item>
@@ -440,6 +446,21 @@
 				</v8:item>
 			</ToolTip>
 			<Action>ОчиститьСхемы</Action>
+		</Command>
+		<Command name="ПереключитьРежимОтладки" id="108">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Режим отладки</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Включить/отключить панель отладки и нижнее табло</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ПереключитьРежимОтладки</Action>
 		</Command>
 		<Command name="ТестСхемы" id="105">
 			<Title>
